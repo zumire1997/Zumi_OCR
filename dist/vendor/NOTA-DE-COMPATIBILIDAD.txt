@@ -1,0 +1,1 @@
+Tesseract.js 7.0.0: el worker incluido contiene una corrección local en initialize. Al recibir modelos como objetos {code, data}, utiliza code, no data, para construir la lista de idiomas de la API. Esto permite incluir los modelos dentro del ZIP sin descargas ni servidor. La licencia Apache-2.0 original se conserva.

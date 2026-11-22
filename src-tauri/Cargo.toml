@@ -1,0 +1,18 @@
+[package]
+name = "zumi-ocr"
+version = "0.17.0"
+description = "Zumi OCR y Zumi Typer - App de escritorio para scanlation"
+authors = ["Zumi Scan"]
+edition = "2021"
+
+[lib]
+name = "zumi_ocr_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"

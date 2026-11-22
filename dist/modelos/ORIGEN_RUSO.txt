@@ -1,0 +1,7 @@
+Modelo ruso de Tesseract: tessdata_fast/rus.traineddata
+Fuente: https://raw.githubusercontent.com/tesseract-ocr/tessdata_fast/main/rus.traineddata
+Descargado: 2026-11-01
+SHA-256 del traineddata: e16e5e036cce1d9ec2b00063cf8b54472625b9e14d893a169e2b0dedeb4df225
+Licencia: Apache-2.0. Texto en vendor/TESSDATA-LICENSE.txt.
+Distribuido como GZIP/base64 en modelos/rus.js para abrir el HTML sin instalación.
+Se utiliza únicamente el modelo rus, sin cargar eng como idioma adicional.

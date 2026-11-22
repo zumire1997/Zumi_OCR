@@ -1,0 +1,24 @@
+PaddleOCR local para Zumi OCR v0.4.11
+
+Componentes incluidos:
+- @paddleocr/paddleocr-js 0.4.2 — PaddlePaddle Authors — Apache-2.0.
+- Modelos PP-OCRv5 mobile — PaddlePaddle Authors — Apache-2.0.
+- onnxruntime-web y onnxruntime-common 1.22.0 — Microsoft Corporation — MIT.
+- @techstark/opencv-js 4.10.0-release.1 — OpenCV contributors — Apache-2.0.
+- js-yaml 4.3.2 — Vitaly Puzrin — MIT.
+- clipper-lib 6.4.2 — Angus Johnson / Timo / Tom Wu — Boost y avisos JSBN.
+
+Los archivos de licencias acompañan este aviso. Los modelos proceden del alojamiento oficial de PaddleOCR; MODELOS.json conserva sus URL, tamaños y SHA-256 originales. Se empaquetan sin modificar los pesos ni inference.yml, como TAR original comprimido con GZIP/base64 dentro de JavaScript para abrir también el HTML desde archivo local.
+
+El worker y el adaptador se compilan para navegador con esbuild 0.25.12. Zumi adapta la resolución de import.meta.url en el cargador JavaScript de ONNX Runtime para leer el módulo desde memoria, fija WASM a un hilo e inyecta los bytes de los recursos incluidos. No se modifican los binarios WASM ni los pesos. El URI reservado zumi.invalid solo sirve como base interna al abrir archivos file://: no se consulta. Las pruebas bloquean peticiones HTTP/HTTPS y comprueban que la inferencia local funciona.
+
+No hay servicios externos de OCR, claves, créditos o límites por página. En la web solo se descargan del propio sitio los archivos elegidos. Las imágenes se procesan en el navegador. El código de detección, recorte y reconocimiento procede del SDK de PaddleOCR; Zumi convierte sus polígonos en las cajas del editor y aplica el filtro de confianza/agrupación existente.
+
+Coreano, inglés, ruso y tailandés usan sus reconocedores específicos. Japonés y ambos chinos usan el reconocedor multilingüe PP-OCRv5_mobile_rec. Se carga un detector y un reconocedor, sin añadir un segundo modelo de inglés. El modo Clásico mantiene los modelos individuales anteriores de Tesseract.
+
+Fuentes del código:
+https://github.com/PaddlePaddle/PaddleOCR/tree/main/paddleocr-js
+https://github.com/microsoft/onnxruntime/tree/v1.22.0
+https://github.com/TechStark/opencv-js
+https://github.com/junmer/clipper-lib
+https://github.com/nodeca/js-yaml

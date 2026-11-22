@@ -1,0 +1,21 @@
+Manga LaMa opcional para Zumi OCR
+
+Modelo ONNX dinámico de ogkalu:
+https://huggingface.co/ogkalu/lama-manga-onnx-dynamic
+https://huggingface.co/ogkalu/lama-manga-onnx-dynamic/resolve/main/lama-manga-dynamic.onnx
+206291843 bytes
+SHA-256: de31ffa5ba26916b8ea35319f6c12151ff9654d4261bccf0583a69bb095315f9
+Licencia indicada por la ficha del ONNX: Apache-2.0.
+Basado en AnimeMangaInpainting de dreMaz:
+https://huggingface.co/dreMaz/AnimeMangaInpainting
+Upstream: https://github.com/dreMaz/AnimeMangaInpainting (MIT).
+La ficha del modelo cita también FourierUnitJIT de Carve-Photos/lama.
+
+El modelo no se redistribuye en este ZIP: se descarga por decisión del usuario.
+Adaptador y composición de máscaras de Zumi. Inferencia con ONNX Runtime Web
+1.22.0, MIT; comparte el runtime local ya incluido en vendor/paddle.
+Consulta vendor/paddle/licencias/ONNXRUNTIME-MIT.txt y los avisos correspondientes de esa carpeta.
+No se utiliza código de Capishot ni LibreMangaTranslator.
+Las imágenes no se envían al sitio del modelo. La petición externa descarga
+únicamente los pesos. Hash comprobado al instalar si crypto.subtle está disponible;
+en HTTP ordinario se comprueban tamaño y entradas del modelo.

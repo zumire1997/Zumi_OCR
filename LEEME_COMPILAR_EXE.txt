@@ -1,0 +1,30 @@
+ZUMI OCR v0.17 - PROYECTO TAURI PARA WINDOWS (.EXE)
+==================================================
+
+Tienes DOS formas 100% gratuitas de generar tu .exe:
+
+--------------------------------------------------
+OPCIÓN A (RECOMENDADA PARA PC VIEJITA): COMPILAR GRATIS EN GITHUB
+No instalas Rust ni Visual Studio en tu PC. GitHub compila el .exe en la nube gratis.
+--------------------------------------------------
+1. Crea un repositorio nuevo en GitHub (puede ser Privado o Público) y sube el contenido de esta carpeta (Zumi_OCR_Tauri) con GitHub Desktop o Git.
+2. En tu repositorio de GitHub, entra a la pestaña "Actions".
+3. A la izquierda elige "Compilar Zumi OCR (.exe para Windows)".
+4. Pulsa el botón "Run workflow" -> "Run workflow".
+5. Espera unos 5 a 8 minutos a que salga el check verde.
+6. Entra a esa ejecución y abajo, en "Artifacts", haz clic en "Zumi-OCR-Windows-EXE".
+7. Se descargará un ZIP con:
+   - Zumi OCR_0.17.0_x64-setup.exe (instalador normal para Windows)
+   - Zumi_OCR_Portable.exe (ejecutable directo sin instalar)
+
+--------------------------------------------------
+OPCIÓN B: COMPILAR EN TU PROPIA PC
+--------------------------------------------------
+Requisitos (gratuitos):
+1. Visual Studio Build Tools (carga de trabajo "Desarrollo para el escritorio con C++").
+2. Rust desde https://rustup.rs
+3. Haz doble clic en COMPILAR_EXE_LOCAL.bat.
+   Al terminar, tu instalador quedará en:
+   src-tauri\target\release\bundle\nsis\
+   Y el .exe directo en:
+   src-tauri\target\release\zumi-ocr.exe

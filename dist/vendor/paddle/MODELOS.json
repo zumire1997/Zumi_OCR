@@ -1,0 +1,38 @@
+[
+  {
+    "name": "PP-OCRv5_mobile_det",
+    "url": "https://paddle-model-ecology.bj.bcebos.com/paddlex/official_inference_model/paddle3.0.0/PP-OCRv5_mobile_det_onnx_infer.tar",
+    "bytes": 4843520,
+    "sha256": "781056046c9ed77a15c94681605db6a0f62317c2e9cce6931c71da2478d4bc30"
+  },
+  {
+    "name": "korean_PP-OCRv5_mobile_rec",
+    "url": "https://paddle-model-ecology.bj.bcebos.com/paddlex/official_inference_model/paddle3.0.0/korean_PP-OCRv5_mobile_rec_onnx_infer.tar",
+    "bytes": 13537280,
+    "sha256": "568ed8b43a260adc9f484d92105e425ea8cddf8ce16940c177bc12864cfb0eb0"
+  },
+  {
+    "name": "eslav_PP-OCRv5_mobile_rec",
+    "url": "https://paddle-model-ecology.bj.bcebos.com/paddlex/official_inference_model/paddle3.0.0/eslav_PP-OCRv5_mobile_rec_onnx_infer.tar",
+    "bytes": 7915520,
+    "sha256": "49e3d48598e6aed05eaa7c9b0a759ab4261d9021dff2d71849d4f1c95b79d30b"
+  },
+  {
+    "name": "PP-OCRv5_mobile_rec",
+    "url": "https://paddle-model-ecology.bj.bcebos.com/paddlex/official_inference_model/paddle3.0.0/PP-OCRv5_mobile_rec_onnx_infer.tar",
+    "bytes": 16701440,
+    "sha256": "f7e792bc836f36e7ef895ad47c426d75b0b75b1650caa6d63fe9418441ffba8c"
+  },
+  {
+    "name": "en_PP-OCRv5_mobile_rec",
+    "url": "https://paddle-model-ecology.bj.bcebos.com/paddlex/official_inference_model/paddle3.0.0/en_PP-OCRv5_mobile_rec_onnx_infer.tar",
+    "bytes": 7874560,
+    "sha256": "4424e851309b291b00aab8191cd4314cefbd2d1b2381ff8994019d262fa95e28"
+  },
+  {
+    "name": "th_PP-OCRv5_mobile_rec",
+    "url": "https://paddle-model-ecology.bj.bcebos.com/paddlex/official_inference_model/paddle3.0.0/th_PP-OCRv5_mobile_rec_onnx_infer.tar",
+    "bytes": 7915520,
+    "sha256": "199bf93fe0c055162beeff1c7173f7dfc5822d7811c07eefb18543f430f71b5d"
+  }
+]

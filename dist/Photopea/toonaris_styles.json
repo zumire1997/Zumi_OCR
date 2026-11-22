@@ -1,0 +1,183 @@
+{
+  "styles": [
+    {
+      "id": "1788531501723",
+      "name": "Pensamientos",
+      "folder": "Los 3 Ángulos del Amor",
+      "font": "CCAskForMercy-Regular",
+      "weight": "Regular",
+      "case": "uppercase",
+      "leading": 120,
+      "autoLeading": true,
+      "antiAlias": "SHARP",
+      "tracking": 0,
+      "hScale": 100,
+      "vScale": 100,
+      "size": 32,
+      "color": "#000000",
+      "strokeSize": 0,
+      "strokeColor": "#000000",
+      "align": "CENTER",
+      "wrap": 25,
+      "prefixes": [
+        "P"
+      ]
+    },
+    {
+      "id": "1789101426664",
+      "name": "Diálogos",
+      "folder": "Los 3 Ángulos del Amor",
+      "font": "Ames",
+      "weight": "Regular",
+      "case": "uppercase",
+      "leading": 120,
+      "autoLeading": false,
+      "antiAlias": "SHARP",
+      "tracking": 0,
+      "hScale": 100,
+      "vScale": 100,
+      "size": 32,
+      "color": "#000000",
+      "strokeSize": 0,
+      "strokeColor": "#000000",
+      "align": "CENTER",
+      "wrap": 25,
+      "prefixes": [
+        "D"
+      ]
+    },
+    {
+      "id": "1789101539912",
+      "name": "Cuadros",
+      "folder": "Los 3 Ángulos del Amor",
+      "font": "CCAskForMercy-Regular",
+      "weight": "Regular",
+      "case": "uppercase",
+      "leading": 120,
+      "autoLeading": false,
+      "antiAlias": "SHARP",
+      "tracking": 0,
+      "hScale": 100,
+      "vScale": 100,
+      "size": 32,
+      "color": "#000000",
+      "strokeSize": 0,
+      "strokeColor": "#000000",
+      "align": "CENTER",
+      "wrap": 25,
+      "prefixes": [
+        "C"
+      ]
+    },
+    {
+      "id": "1789101595208",
+      "name": "Gritos",
+      "folder": "Los 3 Ángulos del Amor",
+      "font": "Ames",
+      "weight": "Bold Italic",
+      "case": "uppercase",
+      "leading": 120,
+      "autoLeading": false,
+      "antiAlias": "SHARP",
+      "tracking": 0,
+      "hScale": 100,
+      "vScale": 100,
+      "size": 32,
+      "color": "#000000",
+      "strokeSize": 0,
+      "strokeColor": "#000000",
+      "align": "CENTER",
+      "wrap": 25,
+      "prefixes": [
+        "G"
+      ]
+    },
+    {
+      "id": "1789101658327",
+      "name": "Mini texto",
+      "folder": "Los 3 Ángulos del Amor",
+      "font": "Ames",
+      "weight": "Italic",
+      "case": "uppercase",
+      "leading": 120,
+      "autoLeading": false,
+      "antiAlias": "SHARP",
+      "tracking": 0,
+      "hScale": 100,
+      "vScale": 100,
+      "size": 27,
+      "color": "#000000",
+      "strokeSize": 0,
+      "strokeColor": "#000000",
+      "align": "CENTER",
+      "wrap": 25,
+      "prefixes": [
+        "M"
+      ]
+    },
+    {
+      "id": "1789101727279",
+      "name": "Pensamiento Negro",
+      "folder": "Los 3 Ángulos del Amor",
+      "font": "CCAskForMercy-Regular",
+      "weight": "Regular",
+      "case": "uppercase",
+      "leading": 120,
+      "autoLeading": false,
+      "antiAlias": "SHARP",
+      "tracking": 0,
+      "hScale": 100,
+      "vScale": 100,
+      "size": 32,
+      "color": "#ffffff",
+      "strokeSize": 0,
+      "strokeColor": "#000000",
+      "align": "CENTER",
+      "wrap": 25,
+      "prefixes": [
+        "N"
+      ]
+    },
+    {
+      "id": "1789101802864",
+      "name": "Onom",
+      "folder": "Los 3 Ángulos del Amor",
+      "font": "TrashHand",
+      "weight": "Regular",
+      "case": "uppercase",
+      "leading": 120,
+      "autoLeading": false,
+      "antiAlias": "SHARP",
+      "tracking": 0,
+      "hScale": 100,
+      "vScale": 100,
+      "size": 50,
+      "color": "#000000",
+      "strokeSize": 4,
+      "strokeColor": "#ffffff",
+      "align": "CENTER",
+      "wrap": 25,
+      "prefixes": [
+        "O"
+      ]
+    }
+  ],
+  "ignoreLinePrefixes": [
+    "SFX:",
+    "Sfx:",
+    "sfx:",
+    "##",
+    "Halaman",
+    "Page",
+    "---",
+    "page",
+    "===",
+    "P1",
+    "P2",
+    "[1]",
+    "Pg.",
+    "PAGE",
+    "=0",
+    "--"
+  ]
+}
