@@ -96,7 +96,7 @@ main{position:relative;--panel-width:375px;grid-template-columns:minmax(0,1fr) v
 .top-actions #toggleFullscreen.active-fs{background:var(--light)!important;color:var(--purple)!important}
 :fullscreen body,html:fullscreen body{height:100vh!important}
 </style></head><body>
-<header class="topbar"><div class="brand"><b>Z</b><div><strong>Zumi Typer</strong><small>Photopea · estilos por proyecto · v0.4</small></div></div><div class="top-actions"><span id="connection" role="status">Cargando Photopea…</span><button id="togglePanel" aria-controls="typerPanel" aria-expanded="true">Ocultar panel</button><button id="resetPanelLayout" title="Restablecer tamaño y posición del panel">Restablecer panel</button><button id="themeToggle" data-theme-toggle>☀ Claro</button><button id="connect">Reconectar</button><button id="toggleFullscreen" type="button" title="Pantalla completa manteniendo visible el panel de Zumi Typer">⛶ Pantalla completa</button><button id="help">Ayuda</button></div></header>
+<header class="topbar"><button id="backToOCR" type="button" hidden style="margin-right:4px;font-size:12px;padding:4px 8px;border-radius:5px;border:1px solid var(--line);background:var(--light);color:var(--purple);font-weight:600">← Zumi OCR</button><div class="brand"><b>Z</b><div><strong>Zumi Typer</strong><small>Photopea · estilos por proyecto · v0.4</small></div></div><div class="top-actions"><span id="connection" role="status">Cargando Photopea…</span><button id="togglePanel" aria-controls="typerPanel" aria-expanded="true">Ocultar panel</button><button id="resetPanelLayout" title="Restablecer tamaño y posición del panel">Restablecer panel</button><button id="themeToggle" data-theme-toggle>☀ Claro</button><button id="connect">Reconectar</button><button id="toggleFullscreen" type="button" title="Pantalla completa manteniendo visible el panel de Zumi Typer">⛶ Pantalla completa</button><button id="help">Ayuda</button></div></header>
 <main><section id="photopeaArea" class="photopea-area"><iframe id="photopea" title="Editor Photopea integrado" allow="clipboard-read; clipboard-write"></iframe></section>
 <aside id="typerPanel" class="panel">
  <div class="project-bar"><label for="folderSelect">Carpeta de estilos</label><select id="folderSelect"></select><span id="folderSummary"></span></div>
@@ -603,6 +603,7 @@ window.ZumiCoordinateUI=function({C,$,state,folder,checkpoint,persist,render,rem
 </script><script>'use strict';
 (async function(){
  const openerToken=new URLSearchParams(location.hash.slice(1)).get('zumi-token')||'';
+ const hostWin=window.opener||(window.parent!==window?window.parent:null);
  const C=ZumiCore,$=id=>document.getElementById(id),seed=C.library(JSON.parse($('zumi-seed').textContent));
  const state={library:seed,pages:[],files:[],docs:[],jobs:[],fonts:[],watermarks:[],activeBannerId:'',activeLogoId:'',outputs:[],manual:[],busy:false,stop:false,installing:false,downloaded:true};
  const pluginMode=new URLSearchParams(location.search).get('plugin')==='1'&&parent!==window;
@@ -781,7 +782,7 @@ window.ZumiCoordinateUI=function({C,$,state,folder,checkpoint,persist,render,rem
  function controls(){
   const selected=state.jobs.filter(j=>j.selected),good=selected.length&&selected.every(valid);
   $('startBatch').disabled=state.busy||state.installing||!bridge.ready||!good;$('startBatch').textContent='Pegar lote'+(selected.length?' · '+selected.length+' páginas':'');
-  $('syncPrefixes').disabled=state.busy||!openerToken||!opener||opener.closed||!folder().styles.some(s=>s.prefixes.length);
+  $('syncPrefixes').disabled=state.busy||!openerToken||!hostWin||hostWin.closed||!folder().styles.some(s=>s.prefixes.length);
   $('undoStyles').disabled=state.busy||!styleUndo.length;$('keepOpen').disabled=state.busy||$('output').value==='layers'||$('destination').value==='docs';
  }
  function busy(value){
@@ -835,7 +836,7 @@ if($('exportCapishotTypeR'))$('exportCapishotTypeR').onclick=()=>jsonDownload(C.
  $('importStyles').onclick=()=>$('stylesFile').click();$('stylesFile').onchange=async e=>{const file=e.target.files[0];e.target.value='';if(!file)return;try{if(file.size>5*1024*1024)throw Error('El archivo de estilos supera 5 MB.');pendingImport=C.importStyles(JSON.parse((await file.text()).replace(/^\uFEFF/,'')),file.name.replace(/\.json$/i,''));$('importSummary').textContent=pendingImport.folders.map(f=>f.name+' · '+f.styles.length+' estilos').join('\n');$('importMode').value='merge';$('importDialog').showModal();}catch(e){toast(e.message,true);}};
  $('confirmImport').onclick=()=>{try{const next=C.mergeLibraries(state.library,pendingImport,$('importMode').value==='replace');checkpoint();commit(next);$('importDialog').close();pendingImport=null;toast('Carpetas importadas.');}catch(e){toast(e.message,true);}};
  window.addEventListener('message',event=>{
-  if(!openerToken||event.source!==opener||event.data?.token!==openerToken)return;const m=event.data;
+  if(!openerToken||event.source!==hostWin||event.data?.token!==openerToken)return;const m=event.data;
   if(m.type==='zumi-typer-project'){
    try{
     if(state.busy||state.installing||$('coordinateDialog').open)throw Error('Termina el lote o cierra la revisión antes de recibir otro capítulo.');
@@ -850,13 +851,13 @@ if($('exportCapishotTypeR'))$('exportCapishotTypeR').onclick=()=>jsonDownload(C.
     state.pages=pages;state.jobs=pages.map(page=>({id:page.id,page,selected:true,folderId:'',targetId:'',status:'',done:false}));
     if(data.images!==undefined){const sentNames=new Set(incoming.map(f=>f.name.toLowerCase()));state.files=[...state.files.filter(f=>!f.fromOCR&&!sentNames.has(f.name.toLowerCase())),...incoming];$('destination').value='files';}
     $('jsonSummary').textContent='Desde Zumi OCR: '+String(data.name||'Capítulo')+' · '+pages.length+' páginas'+(incoming.length?' · imágenes incluidas':'');rematch();tab('batch');$('syncPrefixes').hidden=false;
-    opener.postMessage({type:'zumi-typer-project-result',token:openerToken,requestId:m.requestId,ok:true,pages:pages.length,images:incoming.length},'*');
+    hostWin.postMessage({type:'zumi-typer-project-result',token:openerToken,requestId:m.requestId,ok:true,pages:pages.length,images:incoming.length},'*');
     toast(incoming.length?'Imágenes y coordenadas recibidas. Elige tus estilos y pulsa Pegar lote.':'Coordenadas recibidas desde Zumi OCR.');
-   }catch(e){opener.postMessage({type:'zumi-typer-project-result',token:openerToken,requestId:m.requestId,ok:false,error:e.message},'*');toast(e.message,true);}
+   }catch(e){hostWin.postMessage({type:'zumi-typer-project-result',token:openerToken,requestId:m.requestId,ok:false,error:e.message},'*');toast(e.message,true);}
   }
   if(m.type==='zumi-typer-prefixes-result')toast(m.ok?'Prefijos actualizados en Zumi OCR.':m.error||'No se pudo actualizar Zumi.',!m.ok);
  });
- $('syncPrefixes').onclick=()=>{if(!opener||opener.closed)return toast('Abre el panel desde Zumi OCR para actualizar sus prefijos.');const names=new Set(),prefixes=[];for(const s of folder().styles)for(const code of s.prefixes){let name=s.name;if(names.has(name.toLocaleLowerCase()))name+=' · '+code;names.add(name.toLocaleLowerCase());prefixes.push({id:C.uid(),name,code});}opener.postMessage({type:'zumi-typer-prefixes',token:openerToken,prefixes,folderName:folder().name},'*');};
+ $('syncPrefixes').onclick=()=>{if(!hostWin||hostWin.closed)return toast('Abre el panel desde Zumi OCR para actualizar sus prefijos.');const names=new Set(),prefixes=[];for(const s of folder().styles)for(const code of s.prefixes){let name=s.name;if(names.has(name.toLocaleLowerCase()))name+=' · '+code;names.add(name.toLocaleLowerCase());prefixes.push({id:C.uid(),name,code});}hostWin.postMessage({type:'zumi-typer-prefixes',token:openerToken,prefixes,folderName:folder().name},'*');};
  // Importación de coordenadas: manejada por ZumiCoordinateUI.
 
  $('loadFiles').onclick=()=>$('imageFiles').click();$('loadFolder').onclick=()=>$('imageFolder').click();
@@ -1129,7 +1130,8 @@ if($('exportCapishotTypeR'))$('exportCapishotTypeR').onclick=()=>jsonDownload(C.
  fontSummary();renderWatermarks();render();
  if(pluginMode){document.body.classList.add('plugin');$('destination').value='docs';bridge.setTarget(parent);bridge.ping().then(()=>installFonts()).then(()=>refreshDocs()).catch(e=>toast(e.message,true));}
  else{const frame=$('photopea');bridge.setTarget(frame.contentWindow);frame.src='https://www.photopea.com/#'+encodeURIComponent(JSON.stringify({environment:{theme:2,lang:'es',intro:false}}));initTimer=setTimeout(()=>{if(!bridge.ready){$('connection').textContent='Photopea no terminó de cargar';toast('Comprueba tu conexión a internet y pulsa Reconectar cuando el editor esté visible.',true);}},45000);}
- if(openerToken&&opener&&!opener.closed)opener.postMessage({type:'zumi-typer-ready',token:openerToken},'*');
+ if(openerToken&&hostWin&&!hostWin.closed)hostWin.postMessage({type:'zumi-typer-ready',token:openerToken},'*');
+ if(window.parent!==window&&$('backToOCR')){$('backToOCR').hidden=false;$('backToOCR').onclick=()=>{if(hostWin)hostWin.postMessage({type:'zumi-typer-hide',token:openerToken},'*');};}
  window.ZumiTyper={state,bridge,core:C,coordinateUI,settings,prepare,startBatch,downloadResults,addImages,refreshDocs,render,renderWatermarks,addWatermarkFiles,pasteWatermarksToPhotopea,storage,commit,installFonts};
 })();
 </script>
