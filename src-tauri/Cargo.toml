@@ -1,6 +1,6 @@
 [package]
 name = "zumi-ocr"
-version = "0.17.7"
+version = "0.17.8"
 description = "Zumi OCR y Zumi Typer - App de escritorio para scanlation"
 authors = ["Zumi Scan"]
 edition = "2021"

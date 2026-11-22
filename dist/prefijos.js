@@ -241,7 +241,7 @@
    if(bar){
     const curPage=state.pages.find(p=>p.id===state.pageId);
     const totalBoxes=curPage?.boxes?.length||0;
-    bar.hidden=totalBoxes<2;
+    bar.hidden=boxes.length<2;
     bar.classList.toggle('has-multi',boxes.length>=2);
     const cnt=$('batchSelCount');
     if(cnt)cnt.textContent=boxes.length>=2?(boxes.length+' cajas sel.'):boxes.length===1?'1 caja sel. (Ctrl/Shift+clic para más)':'Selección en lote';
