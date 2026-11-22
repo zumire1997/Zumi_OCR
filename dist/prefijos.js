@@ -237,12 +237,45 @@
    if(mixed){el.prepend(new Option('Varios prefijos','\0mixed'));el.value='\0mixed';}
    el.disabled=isBusy()||!boxes.length;
    $('selectedPrefixCode').textContent=mixed?'Varios':boxes[0]?.prefix||'—';
+   const bar=$('batchPrefixBar');
+   if(bar){
+    const curPage=state.pages.find(p=>p.id===state.pageId);
+    const totalBoxes=curPage?.boxes?.length||0;
+    bar.hidden=totalBoxes<2;
+    bar.classList.toggle('has-multi',boxes.length>=2);
+    const cnt=$('batchSelCount');
+    if(cnt)cnt.textContent=boxes.length>=2?(boxes.length+' cajas sel.'):boxes.length===1?'1 caja sel. (Ctrl/Shift+clic para más)':'Selección en lote';
+    const bSel=$('batchPrefixSelect');
+    if(bSel){
+     const prevVal=bSel.value;
+     options(bSel,boxes[0]||{prefix:''});
+     if(boxes.length===0&&prevVal&&Array.from(bSel.options).some(o=>o.value===prevVal))bSel.value=prevVal;
+     bSel.disabled=isBusy()||!boxes.length;
+    }
+    const bBtn=$('applyBatchPrefix');
+    if(bBtn){
+     bBtn.disabled=isBusy()||!boxes.length;
+     bBtn.textContent=boxes.length>1?('Aplicar a '+boxes.length):'Aplicar';
+    }
+    if($('selectSamePrefix'))$('selectSamePrefix').disabled=isBusy()||!boxes.length;
+    if($('clearBoxSelection'))$('clearBoxSelection').disabled=isBusy()||!boxes.length;
+   }
   }
   $('selectedPrefix').onchange=e=>{
    if(isBusy()||e.target.value==='\0mixed')return;const boxes=selectedBoxes(),value=e.target.value;
    if(!boxes.length||boxes.every(b=>(b.prefix||'')===value))return;
    const fallbackName=boxes.find(b=>b.prefix===value)?.prefixName||'';
    checkpoint();boxes.forEach(b=>assign(b,value,fallbackName));render();changed();$('selectedPrefix').focus({preventScroll:true});
+  };
+  if($('applyBatchPrefix'))$('applyBatchPrefix').onclick=()=>{
+   if(isBusy())return;
+   const boxes=selectedBoxes(),bSel=$('batchPrefixSelect');
+   if(!boxes.length||!bSel)return;
+   const value=bSel.value;
+   if(boxes.every(b=>(b.prefix||'')===value))return tell('Las cajas seleccionadas ya tienen ese prefijo.');
+   const fallbackName=boxes.find(b=>b.prefix===value)?.prefixName||'';
+   checkpoint();boxes.forEach(b=>assign(b,value,fallbackName));render();changed();
+   tell('Prefijo aplicado a '+boxes.length+' '+(boxes.length===1?'caja':'cajas')+'.');
   };
   function currentDraftFolder(){
    return draftFolders.find(f=>f.id===draftActiveId)||draftFolders[0];

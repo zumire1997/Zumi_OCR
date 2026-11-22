@@ -19,12 +19,95 @@ window.ZumiClean=function({state,$,page,checkpoint,render,renderOverlay,changed,
  function point(e){const r=$('overlay').getBoundingClientRect(),p=page();return [Math.max(0,Math.min(p.width,(e.clientX-r.left)/state.zoom)),Math.max(0,Math.min(p.height,(e.clientY-r.top)/state.zoom))];}
  function bounds(points,size,p){const x=Math.max(0,Math.floor(Math.min(...points.map(a=>a[0]))-size/2)),y=Math.max(0,Math.floor(Math.min(...points.map(a=>a[1]))-size/2));return{x,y,w:Math.min(p.width-x,Math.ceil(Math.max(...points.map(a=>a[0]))+size/2-x)),h:Math.min(p.height-y,Math.ceil(Math.max(...points.map(a=>a[1]))+size/2-y))};}
  const el=$('overlay');
- el.addEventListener('pointerdown',e=>{if(state.mode!=='clean')return;e.stopImmediatePropagation();if(isBusy()||!page()?.blob||e.button!==0)return;e.preventDefault();resetDraft();const start=point(e),shape=$('cleanShape').value;drawing={id:e.pointerId,start};draft={kind:'fill',shape,x:start[0],y:start[1],w:0,h:0};if(shape==='brush')Object.assign(draft,{points:[start],size:Math.max(2,Math.min(200,Number($('cleanBrushSize').value)||24)),...bounds([start],Number($('cleanBrushSize').value)||24,page())});el.setPointerCapture(e.pointerId);renderOverlay();refresh();},true);
+ async function cleanClosedBubble(px,py){
+  const p=page();if(!p?.blob||isBusy())return;
+  const tol=Math.max(5,Math.min(100,Number($('cleanTolerance')?.value)||36));
+  const full=await compose(p);
+  try{
+   const W=full.width,H=full.height,ctx=full.getContext('2d',{willReadFrequently:true});
+   const img=ctx.getImageData(0,0,W,H),d=img.data;
+   const sx=Math.max(0,Math.min(W-1,Math.round(px))),sy=Math.max(0,Math.min(H-1,Math.round(py)));
+   // Sample 3x3 average background color around click
+   let sr=0,sg=0,sb=0,sc=0;
+   for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){
+    const nx=sx+dx,ny=sy+dy;if(nx<0||nx>=W||ny<0||ny>=H)continue;
+    const o=(ny*W+nx)*4;sr+=d[o];sg+=d[o+1];sb+=d[o+2];sc++;
+   }
+   sr=Math.round(sr/sc);sg=Math.round(sg/sc);sb=Math.round(sb/sc);
+   const tolSq=tol*tol*3;
+   const visited=new Uint8Array(W*H);
+   const maxPixels=Math.min(2500000,Math.floor(W*H*0.38));
+   const queue=new Int32Array(maxPixels+4);
+   let head=0,tail=0;
+   const startIdx=sy*W+sx;
+   visited[startIdx]=1;queue[tail++]=startIdx;
+   let minX=sx,maxX=sx,minY=sy,maxY=sy,count=0;
+   while(head<tail){
+    const idx=queue[head++];count++;
+    if(count>maxPixels){tell('Este globo o cuadro parece abierto (se escapó al fondo). Baja la tolerancia o usa Rectángulo / Pincel.');return;}
+    const x=idx%W,y=(idx-x)/W;
+    if(x<minX)minX=x;if(x>maxX)maxX=x;if(y<minY)minY=y;if(y>maxY)maxY=y;
+    // 4-neighbors
+    if(x>0){const ni=idx-1;if(!visited[ni]){const o=ni*4,dr=d[o]-sr,dg=d[o+1]-sg,db=d[o+2]-sb;if(dr*dr+dg*dg+db*db<=tolSq){visited[ni]=1;queue[tail++]=ni;}}}
+    if(x+1<W){const ni=idx+1;if(!visited[ni]){const o=ni*4,dr=d[o]-sr,dg=d[o+1]-sg,db=d[o+2]-sb;if(dr*dr+dg*dg+db*db<=tolSq){visited[ni]=1;queue[tail++]=ni;}}}
+    if(y>0){const ni=idx-W;if(!visited[ni]){const o=ni*4,dr=d[o]-sr,dg=d[o+1]-sg,db=d[o+2]-sb;if(dr*dr+dg*dg+db*db<=tolSq){visited[ni]=1;queue[tail++]=ni;}}}
+    if(y+1<H){const ni=idx+W;if(!visited[ni]){const o=ni*4,dr=d[o]-sr,dg=d[o+1]-sg,db=d[o+2]-sb;if(dr*dr+dg*dg+db*db<=tolSq){visited[ni]=1;queue[tail++]=ni;}}}
+   }
+   const bw=maxX-minX+1,bh=maxY-minY+1;
+   if(bw<8||bh<8){tell('Zona muy pequeña. Haz clic sobre el fondo limpio dentro del globo (no sobre una letra).');return;}
+   // Hole-fill inside padded bounding box so all text/strokes enclosed inside the bubble get cleaned too
+   const pw=bw+2,ph=bh+2;
+   const outside=new Uint8Array(pw*ph);
+   const q2=new Int32Array(pw*ph);
+   let h2=0,t2=0;
+   outside[0]=1;q2[t2++]=0;
+   while(h2<t2){
+    const ci=q2[h2++],cx=ci%pw,cy=(ci-cx)/pw;
+    const nbrs=[[cx-1,cy],[cx+1,cy],[cx,cy-1],[cx,cy+1]];
+    for(const [nx,ny] of nbrs){
+     if(nx<0||nx>=pw||ny<0||ny>=ph)continue;
+     const ni=ny*pw+nx;if(outside[ni])continue;
+     const gx=minX+nx-1,gy=minY+ny-1;
+     if(gx>=minX&&gx<=maxX&&gy>=minY&&gy<=maxY&&visited[gy*W+gx])continue;
+     outside[ni]=1;q2[t2++]=ni;
+    }
+   }
+   // Build filled mask with 1px safe erosion to preserve dark bubble outline
+   const mask=new Uint8Array(bw*bh);
+   for(let y=0;y<bh;y++)for(let x=0;x<bw;x++){
+    if(!outside[(y+1)*pw+(x+1)])mask[y*bw+x]=1;
+   }
+   const eroded=new Uint8Array(bw*bh);
+   const doErode=bw>18&&bh>18;
+   for(let y=0;y<bh;y++)for(let x=0;x<bw;x++){
+    const i=y*bw+x;if(!mask[i])continue;
+    if(!doErode){eroded[i]=1;continue;}
+    if(x>0&&x+1<bw&&y>0&&y+1<bh&&mask[i-1]&&mask[i+1]&&mask[i-bw]&&mask[i+bw])eroded[i]=1;
+   }
+   const patch=canvas(bw,bh),pctx=patch.getContext('2d'),pImg=pctx.createImageData(bw,bh),pd=pImg.data;
+   for(let i=0;i<bw*bh;i++){
+    if(!eroded[i])continue;
+    const o=i*4;pd[o]=sr;pd[o+1]=sg;pd[o+2]=sb;pd[o+3]=255;
+   }
+   pctx.putImageData(pImg,0,0);
+   apply({kind:'ai',x:minX,y:minY,w:bw,h:bh,dataURL:patch.toDataURL('image/png')});
+   patch.width=patch.height=0;
+   tell('Globo limpiado con 1 clic (Ctrl+Z para deshacer).');
+  }finally{full.width=full.height=0;}
+ }
+ el.addEventListener('pointerdown',e=>{if(state.mode!=='clean')return;e.stopImmediatePropagation();if(isBusy()||!page()?.blob||e.button!==0)return;e.preventDefault();resetDraft();const start=point(e),shape=$('cleanShape').value;if(shape==='bubble'){cleanClosedBubble(start[0],start[1]);return;}drawing={id:e.pointerId,start};draft={kind:'fill',shape,x:start[0],y:start[1],w:0,h:0};if(shape==='brush')Object.assign(draft,{points:[start],size:Math.max(2,Math.min(200,Number($('cleanBrushSize').value)||24)),...bounds([start],Number($('cleanBrushSize').value)||24,page())});el.setPointerCapture(e.pointerId);renderOverlay();refresh();},true);
  el.addEventListener('pointermove',e=>{if(state.mode!=='clean')return;e.stopImmediatePropagation();if(!drawing||drawing.id!==e.pointerId)return;e.preventDefault();const pos=point(e),start=drawing.start;if(draft.shape==='brush'){const last=draft.points.at(-1);if(Math.hypot(pos[0]-last[0],pos[1]-last[1])<1)return;if(draft.points.length<5000)draft.points.push(pos);Object.assign(draft,bounds(draft.points,draft.size,page()));}else Object.assign(draft,{x:Math.floor(Math.min(start[0],pos[0])),y:Math.floor(Math.min(start[1],pos[1])),w:Math.ceil(Math.abs(pos[0]-start[0])),h:Math.ceil(Math.abs(pos[1]-start[1]))});renderOverlay();},true);
  function finish(e){if(state.mode!=='clean')return;e.stopImmediatePropagation();if(!drawing||drawing.id!==e.pointerId)return;drawing=null;if(e.type==='pointercancel'||draft.w<2||draft.h<2)draft=null;renderOverlay();refresh();}
  el.addEventListener('pointerup',finish,true);el.addEventListener('pointercancel',finish,true);
  $('markClean').onclick=()=>{setMode('clean');tell('Marca en la imagen la zona que quieres rellenar o limpiar.');};
- $('cleanShape').onchange=()=>{$('brushSizeLabel').hidden=$('cleanShape').value!=='brush';resetDraft();setMode('clean');renderOverlay();refresh();};
+ function syncCleanShapeUI(){
+  const v=$('cleanShape').value;
+  $('brushSizeLabel').hidden=v!=='brush';
+  if($('cleanToleranceLabel'))$('cleanToleranceLabel').hidden=v!=='bubble';
+  if($('bubbleCleanMode'))$('bubbleCleanMode').classList.toggle('active',v==='bubble'&&state.mode==='clean');
+ }
+ $('cleanShape').onchange=()=>{syncCleanShapeUI();resetDraft();setMode('clean');renderOverlay();refresh();if($('cleanShape').value==='bubble')tell('Haz 1 clic sobre el fondo blanco/sólido dentro de un globo o cuadro cerrado.');};
+ if($('bubbleCleanMode'))$('bubbleCleanMode').onclick=()=>{$('cleanShape').value='bubble';syncCleanShapeUI();resetDraft();setMode('clean');renderOverlay();refresh();tell('Modo 1 clic activo: haz clic dentro de cualquier globo o cuadro cerrado para limpiarlo.');};
  $('cleanFromBox').onclick=()=>{const b=selectedBoxes()[0];if(!b)return;draftPage=page().id;draft={kind:'fill',shape:$('cleanShape').value==='ellipse'?'ellipse':'rect',x:b.x,y:b.y,w:b.w,h:b.h};setMode('clean');renderOverlay();refresh();};
  $('clearCleanMask').onclick=()=>{resetDraft();renderOverlay();refresh();};
  function apply(edit){const p=page();if(!p?.blob||isBusy())return;checkpoint();p.cleanEdits=[...(p.cleanEdits||[]),{...edit,id:uid()}];resetDraft();render();changed();}

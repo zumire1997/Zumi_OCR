@@ -525,19 +525,93 @@ dialog h2{font-size:17px;letter-spacing:-.2px;margin:0 0 10px}
   border:1px solid var(--line)!important;
   background:var(--panel)!important;
 }
+
 /* Fix botones inferiores del panel Texto (sin solapamiento) */
 .selection-actions{
-  display:flex!important;align-items:center!important;gap:4px!important;
-  flex-wrap:nowrap!important;padding:4px!important;
+  display:flex!important;
+  align-items:center!important;
+  gap:4px!important;
+  flex-wrap:nowrap!important;
+  padding:4px!important;
 }
-.selection-actions .ocr-choice{display:contents!important;}
+.selection-actions .ocr-choice{
+  display:contents!important;
+}
 .selection-actions button{
-  flex:1 1 auto!important;min-width:0!important;padding:5px 7px!important;
-  font-size:11.5px!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important;
+  flex:1 1 auto!important;
+  min-width:0!important;
+  padding:5px 7px!important;
+  font-size:11.5px!important;
+  white-space:nowrap!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
 }
 .selection-actions #difficultOCR{
-  flex:0 0 auto!important;min-width:36px!important;width:auto!important;
-  padding:5px 10px!important;font-size:11.5px!important;font-weight:700!important;
-  background:var(--light)!important;color:var(--purple)!important;
-  border:1px solid color-mix(in srgb,var(--purple) 40%,transparent)!important;border-radius:6px!important;
+  flex:0 0 auto!important;
+  min-width:36px!important;
+  width:auto!important;
+  padding:5px 10px!important;
+  font-size:11.5px!important;
+  font-weight:700!important;
+  background:var(--light)!important;
+  color:var(--purple)!important;
+  border:1px solid color-mix(in srgb,var(--purple) 40%,transparent)!important;
+  border-radius:6px!important;
+}
+.selection-actions #difficultOCR:hover{
+  background:color-mix(in srgb,var(--purple) 26%,transparent)!important;
+}
+
+/* Barra compacta de prefijo en lote (selección múltiple) */
+.batch-prefix-bar{
+  background:var(--surface);
+  border:1px solid var(--line);
+  border-radius:9px;
+  padding:7px 8px;
+  margin-top:8px;
+  display:grid;
+  gap:6px;
+  transition:border-color .15s ease,background .15s ease;
+}
+.batch-prefix-bar.has-multi{
+  background:var(--light);
+  border-color:color-mix(in srgb,var(--purple) 55%,transparent);
+}
+.batch-prefix-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:6px;
+}
+.batch-prefix-head strong{font-size:11px;color:var(--ink)}
+.batch-prefix-bar.has-multi .batch-prefix-head strong{color:var(--purple)}
+.batch-sel-btns{display:flex;gap:3px;flex:none}
+.batch-sel-btns button{padding:3px 6px!important;font-size:10.5px!important;border-radius:5px!important}
+.batch-prefix-apply{display:flex;gap:5px;align-items:center}
+.batch-prefix-apply select{flex:1;min-width:0;padding:4px 7px;font-size:11.5px;margin:0}
+.batch-prefix-apply button{flex:none;padding:5px 10px!important;font-size:11.5px!important}
+
+/* Indicador de cajas sin prefijo en páginas y botón de salto rápido */
+.page-missing-prefix{
+  background:rgba(245,180,65,.18);
+  color:#f5b942;
+  border:1px solid rgba(245,180,65,.4);
+  border-radius:99px;
+  padding:1px 5px;
+  font-size:10px;
+  font-weight:700;
+  line-height:1.2;
+  flex:none;
+}
+:root[data-theme="light"] .page-missing-prefix{
+  background:#fff4d6;color:#9a6700;border-color:#e8c468;
+}
+.missing-prefix-btn{
+  background:rgba(245,180,65,.18)!important;
+  color:#f5b942!important;
+  border:1px solid rgba(245,180,65,.45)!important;
+  font-weight:700!important;
+}
+:root[data-theme="light"] .missing-prefix-btn{
+  background:#fff4d6!important;color:#9a6700!important;border-color:#e8c468!important;
 }
