@@ -95,6 +95,38 @@ main{position:relative;--panel-width:375px;grid-template-columns:minmax(0,1fr) v
 .top-actions #connection{margin-right:auto;font-size:11px;padding-left:6px;white-space:nowrap}
 .top-actions #toggleFullscreen.active-fs{background:var(--light)!important;color:var(--purple)!important}
 :fullscreen body,html:fullscreen body{height:100vh!important}
+
+/* === ZUMI TYPER STUDIO UI v2 === */
+:root{
+  --purple:#7c5ce0;--purple-strong:#6846d1;--pink:#df7cb3;
+  --ink:#231d30;--muted:#776e88;--line:#e6e0f0;--panel:#ffffff;--surface:#f8f6fc;--bg:#f4f1f9;--light:#efe9fb;
+}
+:root[data-theme="dark"]{
+  --purple:#9d7ff5;--purple-strong:#8262e6;--pink:#f09bc8;
+  --ink:#eceaf4;--muted:#958fa6;--line:#292736;--panel:#17171f;--surface:#1d1c27;--bg:#121218;--light:#2a243d;--selection:#251f33;
+}
+*{scrollbar-width:thin;scrollbar-color:var(--line) transparent}
+::-webkit-scrollbar{width:7px;height:7px}
+::-webkit-scrollbar-thumb{background:var(--line);border-radius:99px}
+body{font:12.5px/1.45 'Segoe UI',system-ui,-apple-system,sans-serif;-webkit-font-smoothing:antialiased}
+button{border-radius:7px;border:1px solid var(--line);background:var(--surface);transition:background .14s,border-color .14s}
+button:hover:not(:disabled){background:var(--light);border-color:color-mix(in srgb,var(--purple) 45%,var(--line))}
+button.primary{background:linear-gradient(180deg,var(--purple),var(--purple-strong))!important;border-color:transparent!important;color:#fff!important}
+button.primary:hover:not(:disabled){filter:brightness(1.08)}
+input,select,textarea{border:1px solid var(--line);background:var(--bg);border-radius:7px;padding:6px 8px}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--purple);box-shadow:0 0 0 2px color-mix(in srgb,var(--purple) 24%,transparent)}
+.topbar{height:36px!important;min-height:36px!important;background:var(--panel)!important;border-bottom:1px solid var(--line)!important}
+:root[data-theme="dark"] .topbar{background:#14141b!important;border-bottom-color:#242230!important}
+.brand>b{background:linear-gradient(145deg,#9b78f4,#6b47ce)!important;box-shadow:0 2px 6px rgba(119,86,181,.35)}
+.panel{background:var(--panel);border-left:1px solid var(--line)}
+.project-bar{background:var(--surface);margin:8px 10px 6px;padding:8px 10px;border:1px solid var(--line);border-radius:9px}
+.tabs{padding:4px 10px 8px;gap:3px;border-bottom:1px solid var(--line)}
+.tabs button{border-color:transparent;background:transparent;color:var(--muted);font-weight:600;border-radius:7px}
+.tabs button:hover{background:var(--surface);color:var(--ink)}
+.tabs button.active{background:var(--light);color:var(--purple);border-color:color-mix(in srgb,var(--purple) 35%,transparent)}
+.style-card,.wm-box,.wm-card,.queue{background:var(--surface);border-color:var(--line);border-radius:10px}
+dialog{border-radius:14px;border-color:var(--line);box-shadow:0 16px 42px rgba(0,0,0,.5)}
+dialog::backdrop{background:rgba(10,8,18,.58);backdrop-filter:blur(4px)}
 </style></head><body>
 <header class="topbar"><button id="backToOCR" type="button" hidden style="margin-right:4px;font-size:12px;padding:4px 8px;border-radius:5px;border:1px solid var(--line);background:var(--light);color:var(--purple);font-weight:600">← Zumi OCR</button><div class="brand"><b>Z</b><div><strong>Zumi Typer</strong><small>Photopea · estilos por proyecto · v0.4</small></div></div><div class="top-actions"><span id="connection" role="status">Cargando Photopea…</span><button id="togglePanel" aria-controls="typerPanel" aria-expanded="true">Ocultar panel</button><button id="resetPanelLayout" title="Restablecer tamaño y posición del panel">Restablecer panel</button><button id="themeToggle" data-theme-toggle>☀ Claro</button><button id="connect">Reconectar</button><button id="toggleFullscreen" type="button" title="Pantalla completa manteniendo visible el panel de Zumi Typer">⛶ Pantalla completa</button><button id="help">Ayuda</button></div></header>
 <main><section id="photopeaArea" class="photopea-area"><iframe id="photopea" title="Editor Photopea integrado" allow="clipboard-read; clipboard-write"></iframe></section>
