@@ -49,8 +49,7 @@ function updateMissingPrefixUI(){
   btn.hidden=total===0;
   btn.textContent='⚠ '+total;
   btn.title=total===1?'Ir a la caja sin prefijo del capítulo':'Ir a la siguiente caja sin prefijo ('+total+' en el capítulo)';
- }
- if(bar&&total>0)bar.hidden=false;
+ 
 }
 function jumpToNextMissingPrefix(){
  if(busy||!state.pages.length)return;
