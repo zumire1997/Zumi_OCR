@@ -1,11 +1,12 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "Permisos base para Zumi OCR",
+  "description": "Permisos base y auto-actualizador para Zumi OCR",
   "windows": [
     "main"
   ],
   "permissions": [
-    "core:default"
+    "core:default",
+    "updater:default"
   ]
 }
