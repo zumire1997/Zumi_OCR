@@ -410,6 +410,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
    var doc=app.documents[target.index];return doc&&doc.name===target.name?doc:null;
   }
   function findGroup(parent,name){for(var i=0;i<parent.layerSets.length;i++){var child=parent.layerSets[i];if(child.name===name)return child;var found=findGroup(child,name);if(found)return found;}return null;}
+  function countAllLayers(parent){var n=parent.layers?parent.layers.length:0;if(parent.layerSets){for(var i=0;i<parent.layerSets.length;i++)n+=countAllLayers(parent.layerSets[i]);}return n;}
   function stroke(layer,s){
    var desc=new ActionDescriptor(),ref=new ActionReference(),fx=new ActionDescriptor(),st=new ActionDescriptor(),rgb=new ActionDescriptor();
    ref.putProperty(charIDToTypeID('Prpr'),charIDToTypeID('Lefx'));ref.putEnumerated(charIDToTypeID('Lyr '),charIDToTypeID('Ordn'),charIDToTypeID('Trgt'));desc.putReference(charIDToTypeID('null'),ref);
@@ -433,54 +434,88 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   }
   function run(){
    if(data.action==='docs'){var docs=[],actIdx=-1;for(var i=0;i<app.documents.length;i++){var d=app.documents[i];if(app.documents.length&&d===app.activeDocument)actIdx=i;docs.push({index:i,name:d.name,source:d.source||'',width:px(d.width),height:px(d.height)});}return {ok:true,docs:docs,activeIndex:actIdx};}
-   if(data.action==='placeWatermark'){
-    if(data.expectedCount&&app.documents.length!==data.expectedCount)return result(false,'Photopea no abrió el PNG de la marca de agua.');
-    var wmDoc=app.activeDocument,wmLayer=wmDoc.layers[0],targets=data.targets||[],placedCount=0;
+   if(data.action==='openWatermarkSmart'){
+    var destDoc=documentFor(data.target);
+    if(!destDoc&&data.target&&data.target.name){for(var d0=0;d0<app.documents.length;d0++)if(app.documents[d0].name===data.target.name){destDoc=app.documents[d0];break;}}
+    if(!destDoc)return result(false,'Abre primero una tira o imagen en Photopea.');
+    app.activeDocument=destDoc;
+    var selRect=null;
     try{
-     for(var t=0;t<targets.length;t++){
-      var destDoc=documentFor(targets[t]);
-      if(!destDoc||destDoc===wmDoc)continue;
-      app.activeDocument=wmDoc;
-      var dup=wmLayer.duplicate(destDoc,ElementPlacement.PLACEATBEGINNING);
-      app.activeDocument=destDoc;
-      var grpName='Zumi · Marcas de agua',wmGroup=findGroup(destDoc,grpName);
-      if(!wmGroup){wmGroup=destDoc.layerSets.add();wmGroup.name=grpName;try{wmGroup.move(destDoc,ElementPlacement.PLACEATBEGINNING);}catch(ignore){}}
-      try{dup.move(wmGroup,ElementPlacement.INSIDE);}catch(ignore){}
-      destDoc.activeLayer=dup;
-      dup.name=(data.wm.kind==='banner'?'Banner 45% · ':'Nombre 25% · ')+data.wm.name;
-      var sc=Number(data.wm.scale)||100;
-      if(sc>0&&Math.abs(sc-100)>0.01)dup.resize(sc,sc,AnchorPosition.TOPLEFT);
-      var bb=dup.bounds,left=px(bb[0]),top=px(bb[1]),right=px(bb[2]),bottom=px(bb[3]),lw=right-left,lh=bottom-top;
-      var dw=px(destDoc.width),dh=px(destDoc.height);
-      var selBounds=null;
-      try{if(destDoc.selection&&destDoc.selection.bounds)selBounds=destDoc.selection.bounds;}catch(ignore){}
-      var targetX,targetY;
-      if(data.wm.alignRight){
-       targetX=dw-lw;
-       if(selBounds){var sy=(px(selBounds[1])+px(selBounds[3]))/2;targetY=Math.round(sy-lh/2);}
-       else{var byPct=typeof data.wm.yPercent==='number'?data.wm.yPercent:50;targetY=Math.round(dh*(byPct/100)-lh/2);}
-      }else{
-       if(selBounds){
-        targetX=Math.round((px(selBounds[0])+px(selBounds[2]))/2-lw/2);
-        targetY=Math.round((px(selBounds[1])+px(selBounds[3]))/2-lh/2);
-       }else{
-        targetX=Math.round((dw-lw)/2);
-        var lyPct=typeof data.wm.yPercent==='number'?data.wm.yPercent:35;
-        targetY=Math.round(dh*(lyPct/100)-lh/2);
-       }
-      }
-      if(targetX<0)targetX=0;if(targetX>dw-lw)targetX=Math.max(0,dw-lw);
-      if(targetY<0)targetY=0;if(targetY>dh-lh)targetY=Math.max(0,dh-lh);
-      dup.translate(targetX-left,targetY-top);
-      placedCount++;
+     if(destDoc.selection&&destDoc.selection.bounds){
+      var sb=destDoc.selection.bounds;
+      selRect=[px(sb[0]),px(sb[1]),px(sb[2]),px(sb[3])];
+      destDoc.selection.deselect();
      }
-    }finally{
-     try{wmDoc.close(SaveOptions.DONOTSAVECHANGES);}catch(ignore){}
+    }catch(ignore){}
+    if(destDoc.layers&&destDoc.layers.length){try{destDoc.activeLayer=destDoc.layers[0];}catch(ignore){}}
+    var beforeDocs=app.documents.length,beforeLayers=countAllLayers(destDoc);
+    app.open(data.dataURL,null,true);
+    return {ok:true,beforeDocs:beforeDocs,beforeLayers:beforeLayers,selRect:selRect};
+   }
+   if(data.action==='finalizeWatermark'){
+    var tDoc=documentFor(data.target);
+    if(!tDoc&&data.target&&data.target.name){for(var d1=0;d1<app.documents.length;d1++)if(app.documents[d1].name===data.target.name){tDoc=app.documents[d1];break;}}
+    if(!tDoc)return result(false,'La tira de destino ya no está abierta en Photopea.');
+    var placed=null;
+    if(countAllLayers(tDoc)>data.beforeLayers){
+     app.activeDocument=tDoc;
+     placed=tDoc.activeLayer||tDoc.layers[0];
+    }else if(app.documents.length>data.beforeDocs){
+     var wmDoc=app.documents[app.documents.length-1];
+     if(wmDoc&&wmDoc!==tDoc){
+      try{
+       app.activeDocument=wmDoc;
+       var wmLayer=wmDoc.layers[0];
+       try{wmLayer.name='__ZUMI_WM_TEMP__';}catch(ignore){}
+       wmLayer.duplicate(tDoc);
+      }finally{
+       try{app.activeDocument=wmDoc;wmDoc.close(SaveOptions.DONOTSAVECHANGES);}catch(ignore){}
+      }
+      app.activeDocument=tDoc;
+      for(var lIdx=0;lIdx<tDoc.layers.length;lIdx++){if(tDoc.layers[lIdx].name==='__ZUMI_WM_TEMP__'){placed=tDoc.layers[lIdx];break;}}
+      if(!placed)placed=tDoc.layers[0]||tDoc.activeLayer;
+     }
+    }else{
+     return {ok:true,pending:true};
     }
-    if(!placedCount)return result(false,'Abre primero una tira o documento en Photopea para pegar la marca.');
-    var lastDest=documentFor(targets[targets.length-1]);
-    if(lastDest)app.activeDocument=lastDest;
-    return {ok:true,count:placedCount,message:'Marca «'+data.wm.name+'» ('+data.wm.scale+'%) pegada en '+placedCount+(placedCount===1?' tira.':' tiras.')};
+    if(!placed)return result(false,'No se pudo crear la capa de la marca de agua.');
+    tDoc.activeLayer=placed;
+    try{placed.name=(data.wm.kind==='banner'?'Banner '+data.wm.scale+'% · ':'Nombre '+data.wm.scale+'% · ')+data.wm.name;}catch(ignore){}
+    var bb=placed.bounds,left=px(bb[0]),top=px(bb[1]),right=px(bb[2]),bottom=px(bb[3]);
+    if(left===left&&top===top&&right===right&&bottom===bottom){
+     var curW=right-left,curH=bottom-top;
+     if(data.wm.width&&curW>0&&Math.abs(curW-data.wm.width)>0.5){
+      var scalePct=(data.wm.width/curW)*100;
+      try{placed.resize(scalePct,scalePct,AnchorPosition.MIDDLECENTER);}catch(ignore){try{placed.resize(scalePct,scalePct);}catch(ignore2){}}
+      bb=placed.bounds;left=px(bb[0]);top=px(bb[1]);right=px(bb[2]);bottom=px(bb[3]);
+      curW=right-left;curH=bottom-top;
+      if(curW>0&&Math.abs(curW-data.wm.width)>2){
+       try{placed.resize(100,100,AnchorPosition.MIDDLECENTER);}catch(ignore){try{placed.resize(100,100);}catch(ignore2){}}
+       bb=placed.bounds;left=px(bb[0]);top=px(bb[1]);right=px(bb[2]);bottom=px(bb[3]);
+      }
+     }
+     var lw=right-left,lh=bottom-top,dw=px(tDoc.width),dh=px(tDoc.height);
+     var sr=data.selRect;
+     var targetX,targetY;
+     if(data.wm.alignRight){
+      targetX=dw-lw;
+      if(sr&&sr.length===4){targetY=Math.round((sr[1]+sr[3])/2-lh/2);}
+      else{var byPct=typeof data.wm.yPercent==='number'?data.wm.yPercent:50;targetY=Math.round(dh*(byPct/100)-lh/2);}
+     }else{
+      if(sr&&sr.length===4){
+       targetX=Math.round((sr[0]+sr[2])/2-lw/2);
+       targetY=Math.round((sr[1]+sr[3])/2-lh/2);
+      }else{
+       targetX=Math.round((dw-lw)/2);
+       var lyPct=typeof data.wm.yPercent==='number'?data.wm.yPercent:35;
+       targetY=Math.round(dh*(lyPct/100)-lh/2);
+      }
+     }
+     if(targetX<0)targetX=0;if(targetX>dw-lw)targetX=Math.max(0,dw-lw);
+     if(targetY<0)targetY=0;if(targetY>dh-lh)targetY=Math.max(0,dh-lh);
+     placed.translate(targetX-left,targetY-top);
+    }
+    return {ok:true,pending:false,count:1};
    }
    if(data.action==='claim'){if(app.documents.length!==data.expectedCount)return result(false,'Photopea no abrió exactamente una página nueva. No se modificó el documento anterior.');var d=app.activeDocument;d.name=data.name;d.source=data.source;return {ok:true,doc:{name:d.name,source:d.source,width:px(d.width),height:px(d.height)}};}
    var doc=documentFor(data.target);if(!doc)return result(false,'La página seleccionada ya no está abierta. Actualiza la lista de documentos.');
@@ -1068,21 +1103,71 @@ if($('exportCapishotTypeR'))$('exportCapishotTypeR').onclick=()=>jsonDownload(C.
   if(logo)out.push(logo);
   return out;
  }
+ async function getScaledWatermarkDataURL(wm){
+  const sc=Math.max(1,Math.min(500,Number(wm.scale)||(wm.kind==='banner'?45:25)));
+  const blob=new Blob([wm.buffer],{type:wm.mime||'image/png'});
+  const imgUrl=URL.createObjectURL(blob);
+  try{
+   const img=await new Promise((resolve,reject)=>{const i=new Image();i.onload=()=>resolve(i);i.onerror=()=>reject(Error('No se pudo leer el PNG de la marca '+wm.name));i.src=imgUrl;});
+   const w=Math.max(1,Math.round((img.naturalWidth||img.width)*(sc/100)));
+   const h=Math.max(1,Math.round((img.naturalHeight||img.height)*(sc/100)));
+   const c=document.createElement('canvas');
+   c.width=w;c.height=h;
+   const ctx=c.getContext('2d');
+   ctx.imageSmoothingEnabled=true;
+   ctx.imageSmoothingQuality='high';
+   ctx.drawImage(img,0,0,w,h);
+   let opaqueW=w,opaqueH=h;
+   try{
+    const data=ctx.getImageData(0,0,w,h).data;
+    let minX=w,minY=h,maxX=-1,maxY=-1;
+    for(let y=0;y<h;y++){
+     const row=y*w*4;
+     for(let x=0;x<w;x++){
+      if(data[row+x*4+3]>0){
+       if(x<minX)minX=x;if(x>maxX)maxX=x;
+       if(y<minY)minY=y;if(y>maxY)maxY=y;
+      }
+     }
+    }
+    if(maxX>=minX&&maxY>=minY){opaqueW=maxX-minX+1;opaqueH=maxY-minY+1;}
+   }catch{}
+   return {dataURL:c.toDataURL('image/png'),width:opaqueW,height:opaqueH};
+  }finally{
+   URL.revokeObjectURL(imgUrl);
+  }
+ }
  async function placeWatermarksOnTargets(targets,items){
   const bannerY=Number($('wmBannerY').value);
   const logoY=Number($('wmLogoY').value);
-  let totalPlaced=0;
+  const scaledList=[];
   for(const wm of items){
-   const before=(await bridge.command({action:'docs'})).docs.length;
-   await bridge.operation(wm.buffer);
-   const yPercent=wm.kind==='banner'?(Number.isFinite(bannerY)?bannerY:50):(Number.isFinite(logoY)?logoY:35);
-   const res=await bridge.command({
-    action:'placeWatermark',
-    expectedCount:before+1,
-    targets,
-    wm:{name:wm.name,kind:wm.kind,scale:wm.scale,alignRight:wm.kind==='banner',yPercent}
-   });
-   totalPlaced=res.count||totalPlaced;
+   const scaled=await getScaledWatermarkDataURL(wm);
+   scaledList.push({wm,dataURL:scaled.dataURL,width:scaled.width,height:scaled.height});
+  }
+  let totalPlaced=0;
+  for(const target of targets){
+   let placedOnTarget=false;
+   for(const {wm,dataURL,width,height} of scaledList){
+    const yPercent=wm.kind==='banner'?(Number.isFinite(bannerY)?bannerY:50):(Number.isFinite(logoY)?logoY:35);
+    const prep=await bridge.command({action:'openWatermarkSmart',target,dataURL},{timeout:20000});
+    let fin=null;
+    for(let attempt=0;attempt<30;attempt++){
+     await new Promise(r=>setTimeout(r,65));
+     fin=await bridge.command({
+      action:'finalizeWatermark',
+      target,
+      beforeDocs:prep.beforeDocs,
+      beforeLayers:prep.beforeLayers,
+      selRect:prep.selRect,
+      wm:{name:wm.name,kind:wm.kind,scale:wm.scale,width,height,alignRight:wm.kind==='banner',yPercent}
+     },{timeout:20000});
+     if(!fin.pending)break;
+    }
+    if(fin?.pending)throw Error('Photopea tardó demasiado en colocar la marca «'+wm.name+'».');
+    placedOnTarget=true;
+   }
+   if(placedOnTarget)totalPlaced++;
   }
   return totalPlaced;
  }
