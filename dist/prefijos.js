@@ -503,6 +503,18 @@
    persist();
   }
   renderFolderPickers();
-  return {renderCard,renderSelection,renderFolderPickers,persist,assignment,switchFolder,syncFromExternal};
+    function applyQuickIndex(num){
+   if(isBusy())return false;
+   const boxes=selectedBoxes();
+   if(!boxes.length)return false;
+   const items=state.prefixes||[];
+   const item=items[num-1];
+   if(!item)return false;
+   const val=code(item.code);
+   checkpoint();boxes.forEach(b=>assign(b,val,item.name||''));render();changed();
+   tell('Prefijo «'+(item.name||val)+'» ('+val+') aplicado a '+boxes.length+' '+(boxes.length===1?'caja':'cajas')+' (tecla '+num+').');
+   return true;
+  }
+  return {renderCard,renderSelection,renderFolderPickers,persist,assignment,switchFolder,syncFromExternal,applyQuickIndex};
  };
 })();

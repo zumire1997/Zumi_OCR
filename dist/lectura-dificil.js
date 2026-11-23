@@ -82,33 +82,41 @@ window.ZumiVision=function({$,page,selectedBoxes,checkpoint,render,changed,tell,
  }
  function buildMosaic(p,boxes){
   if(!p?.image||!p.blob)throw new Error('Carga el raw de esta página para armar el mosaico.');
-  const pad=16,badgeW=68,maxCropW=680;
+  const pad=14,badgeW=56,maxCropW=420,maxCropH=240;
+  const cols=boxes.length<=3?1:2;
   const items=boxes.map((b,i)=>{
-   const scale=Math.min(1.6,maxCropW/Math.max(1,b.w),260/Math.max(1,b.h));
+   const scale=Math.min(2,maxCropW/Math.max(1,b.w),maxCropH/Math.max(1,b.h));
    const w=Math.max(24,Math.round(b.w*scale)),h=Math.max(36,Math.round(b.h*scale));
-   return {b,index:i+1,w,h,rowH:Math.max(54,h+20)};
+   return {b,index:i+1,w,h,cellW:w+badgeW+20,cellH:Math.max(54,h+20)};
   });
-  const totalW=Math.min(960,Math.max(460,Math.max(...items.map(it=>it.w))+badgeW+pad*3));
-  const totalH=items.reduce((sum,it)=>sum+it.rowH+pad,pad);
+  const colW=Math.max(...items.map(it=>it.cellW),260);
+  const rows=Math.ceil(items.length/cols);
+  const rowHeights=[];
+  for(let r=0;r<rows;r++){
+   const slice=items.slice(r*cols,r*cols+cols);
+   rowHeights.push(Math.max(...slice.map(it=>it.cellH)));
+  }
+  const totalW=cols*colW+(cols+1)*pad;
+  const totalH=rowHeights.reduce((a,h)=>a+h+pad,pad);
   const c=document.createElement('canvas');
   c.width=totalW;c.height=totalH;
   const ctx=c.getContext('2d');
   ctx.fillStyle='#ffffff';ctx.fillRect(0,0,totalW,totalH);
   let y=pad;
-  for(const it of items){
-   ctx.strokeStyle='#dcd3e8';ctx.lineWidth=1.5;
-   ctx.strokeRect(pad,y,totalW-pad*2,it.rowH);
-   // Clear "[1]" text label on white background so Google Lens reads the number marker effortlessly!
-   ctx.fillStyle='#f4effa';
-   ctx.fillRect(pad+1,y+1,badgeW,it.rowH-2);
-   ctx.fillStyle='#111111';
-   ctx.font='bold 24px Arial, sans-serif';
-   ctx.textAlign='center';ctx.textBaseline='middle';
-   ctx.fillText('['+it.index+']',pad+badgeW/2,y+it.rowH/2);
-   // Draw crop
-   const cx=pad+badgeW+12,cy=y+Math.round((it.rowH-it.h)/2);
-   ctx.drawImage(p.image,it.b.x,it.b.y,it.b.w,it.b.h,cx,cy,it.w,it.h);
-   y+=it.rowH+pad;
+  for(let r=0;r<rows;r++){
+   const rh=rowHeights[r];
+   for(let col=0;col<cols;col++){
+    const it=items[r*cols+col];if(!it)continue;
+    const x=pad+col*(colW+pad);
+    ctx.strokeStyle='#dcd3e8';ctx.lineWidth=1.5;ctx.strokeRect(x,y,colW,rh);
+    ctx.fillStyle='#f4effa';ctx.fillRect(x+1,y+1,badgeW,rh-2);
+    ctx.fillStyle='#111111';ctx.font='bold 20px Arial, sans-serif';
+    ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText('['+it.index+']',x+badgeW/2,y+rh/2);
+    const cx=x+badgeW+10,cy=y+Math.round((rh-it.h)/2);
+    ctx.drawImage(p.image,it.b.x,it.b.y,it.b.w,it.b.h,cx,cy,it.w,it.h);
+   }
+   y+=rh+pad;
   }
   return c;
  }
@@ -247,6 +255,20 @@ window.ZumiVision=function({$,page,selectedBoxes,checkpoint,render,changed,tell,
  $('difficultOCR').onclick=open;$('visionMethod').onchange=method;$('visionText').oninput=refresh;$('listVisionModels').onclick=models;$('readVision').onclick=read;$('applyVision').onclick=apply;
  $('cancelVision').onclick=()=>{cancel();message('Lectura detenida. El original se conserva.');};$('closeVision').onclick=()=>dialog.close();dialog.addEventListener('close',()=>{if(dialog.open)return;cancel();target=null;canvas=null;$('visionCrop').removeAttribute('src');$('visionText').value='';refresh();});
  $('forgetVisionKey').onclick=()=>{const key=$('visionKey').value;$('visionKey').value='';if($('apiKey').value===key)$('apiKey').value='';message('Clave de lectura borrada de esta sesión.');};
+ async function copyCanvasToClipboard(){
+  if(!canvas)throw new Error('Abre primero una caja o mosaico.');
+  if(!navigator.clipboard?.write||!window.ClipboardItem)throw new Error('Este navegador no permite copiar imágenes; usa Descargar recorte.');
+  await navigator.clipboard.write([new ClipboardItem({'image/png':new Promise(resolve=>canvas.toBlob(resolve,'image/png'))})]);
+ }
+ if($('copyAndOpenLens'))$('copyAndOpenLens').onclick=async()=>{
+  try{
+   await copyCanvasToClipboard();
+   const inv=window.__TAURI_INTERNALS__?.invoke||window.__TAURI__?.core?.invoke;
+   if(inv){await inv('open_external_url',{url:'https://lens.google.com/'});}
+   else{window.open('https://lens.google.com/','_blank','noopener');}
+   message('Recorte copiado y Google Lens abierto. Solo pulsa Ctrl+V en Lens y pega el texto abajo.');
+  }catch(e){message(e.message||'No se pudo abrir Lens. Usa Solo copiar o Descargar.',true);}
+ };
  $('copyVisionCrop').onclick=async()=>{try{if(!canvas)throw new Error('Abre primero una caja o mosaico.');if(!navigator.clipboard?.write||!window.ClipboardItem)throw new Error('Este navegador no permite copiar imágenes; usa Descargar imagen.');await navigator.clipboard.write([new ClipboardItem({'image/png':new Promise(resolve=>canvas.toBlob(resolve,'image/png'))})]);message(target?.mode==='batch'?'Mosaico copiado. Pégalo en Google Lens (Ctrl+V), copia todo el texto y pégalo abajo.':'Recorte copiado. Pégalo en Lens o en tu IA.');}catch(e){message(e.message||'No se pudo copiar. Usa Descargar.',true);}};
  $('downloadVisionCrop').onclick=()=>{if(canvas&&target){const suffix=target.mode==='batch'?'_Mosaico_Lens.png':'_'+target.id+'_Recorte.png';const filename=safeName(target.filename.replace(/\.[^.]+$/,'')+suffix);canvas.toBlob(blob=>{if(blob)download(blob,filename);},'image/png');}};
  method();refresh();return {open,refresh,oneLine,parseBatchText,buildMosaic};

@@ -36,6 +36,29 @@ window.ZumiExports = function(c) {
   $('downloadTextExport').textContent=format==='coordinates'?'Descargar JSON':'Descargar TXT';
   $('copyTextExport').disabled=!bundle.count;$('downloadTextExport').disabled=!bundle.count;
   $('textExportMessage').textContent=format==='capishot_typer'?'Formato listo para el panel TypeR de Capishot (Page N, ## archivo y PREFIJO: texto).':format==='plain'?('Un globo por bloque, separado por una línea en blanco. '+($('textExportPrefixes').checked?'Se añade el código elegido y un espacio; las cajas sin prefijo salen solo con su texto.':'Texto sin prefijos de TyperTool.')):'Las coordenadas están en píxeles del raw. Se conservan IDs, orden, prefijos, originales y traducciones; text contiene el texto elegido para exportar.';
+  const qaEl=$('textExportQA');
+  if(qaEl){
+   const targets=$('textExportScope').value==='page'?(page()?[page()]:[]):state.pages;
+   const cjkRe=/[\u3040-\u30ff\u3400-\u9fff\uac00-\ud7af]/;
+   let noTrad=0,noPref=0,hasCjk=0;
+   const noPrefPages=new Set(),cjkPages=new Set();
+   for(const p of targets){
+    for(const b of p.boxes||[]){
+     const tr=String(b.trad||'').trim();
+     if(content==='translation'&&!tr)noTrad++;
+     if($('textExportPrefixes').checked&&!(b.prefix||'').trim()){noPref++;noPrefPages.add(p.filename);}
+     if(content==='translation'&&tr&&cjkRe.test(tr)){hasCjk++;cjkPages.add(p.filename);}
+    }
+   }
+   const issues=[];
+   if(noTrad)issues.push(noTrad+' sin traducción');
+   if(noPref)issues.push(noPref+' sin prefijo ('+[...noPrefPages].slice(0,3).join(', ')+(noPrefPages.size>3?'…':'')+')');
+   if(hasCjk)issues.push(hasCjk+' con letras coreanas/chinas en español ('+[...cjkPages].slice(0,3).join(', ')+(cjkPages.size>3?'…':'')+')');
+   qaEl.hidden=false;
+   qaEl.classList.toggle('qa-warn',issues.length>0);
+   qaEl.classList.toggle('qa-ok',issues.length===0);
+   qaEl.textContent=issues.length?('⚠ Revisión previa: '+issues.join(' · ')):'✓ Revisión limpia: todas las cajas tienen texto y prefijo en orden.';
+  }
   return bundle;
  }
  function open(format='plain',scope='all') {
