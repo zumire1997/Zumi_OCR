@@ -641,7 +641,7 @@ dialog h2{font-size:17px;letter-spacing:-.2px;margin:0 0 10px}
 body.pen-only #stage #overlay,
 body.pen-only #stage.adding #overlay,
 body.pen-only #stage.cleaning #overlay {
-  touch-action: pan-x pan-y;
+  touch-action: none;
 }
 .pen-toggle-btn {
   border-radius: 7px;

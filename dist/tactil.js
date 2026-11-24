@@ -50,15 +50,43 @@
  }
  syncPenUI();
 
- // 2-finger pinch-to-zoom and pan on #viewport
+ // 1-finger pan (when Solo lápiz is ON) + 2-finger pinch-to-zoom on #viewport
  const viewport = $('viewport');
  if (viewport) {
   let pinch = null;
+  let fingerPan = null;
   function touchDist(t1, t2){ return Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY); }
   function touchMid(t1, t2){ return { x: (t1.clientX + t2.clientX) / 2, y: (t1.clientY + t2.clientY) / 2 }; }
 
+  // Smooth 1-finger drag scrolling when penOnly is active (keeps touch-action:none for uninterrupted stylus strokes)
+  viewport.addEventListener('pointerdown', e => {
+   if (!penOnly || e.pointerType !== 'touch' || !e.isPrimary || gestureActive) return;
+   fingerPan = {
+    id: e.pointerId,
+    startX: e.clientX,
+    startY: e.clientY,
+    scrollLeft: viewport.scrollLeft,
+    scrollTop: viewport.scrollTop
+   };
+  }, true);
+
+  viewport.addEventListener('pointermove', e => {
+   if (!fingerPan || e.pointerId !== fingerPan.id || gestureActive) return;
+   const dx = e.clientX - fingerPan.startX;
+   const dy = e.clientY - fingerPan.startY;
+   viewport.scrollLeft = fingerPan.scrollLeft - dx;
+   viewport.scrollTop = fingerPan.scrollTop - dy;
+  }, true);
+
+  function endFingerPan(e){
+   if (fingerPan && e.pointerId === fingerPan.id) fingerPan = null;
+  }
+  viewport.addEventListener('pointerup', endFingerPan, true);
+  viewport.addEventListener('pointercancel', endFingerPan, true);
+
   viewport.addEventListener('touchstart', e => {
    if (e.touches.length >= 2) {
+    fingerPan = null;
     gestureActive = true;
     cancelActiveStrokes();
     const t1 = e.touches[0], t2 = e.touches[1];
