@@ -159,7 +159,7 @@ window.ZumiClean=function({state,$,page,checkpoint,render,renderOverlay,changed,
  function finish(e){if(state.mode!=='clean')return;e.stopImmediatePropagation();if(!drawing||drawing.id!==e.pointerId)return;drawing=null;if(e.type==='pointercancel'||draft.w<2||draft.h<2)draft=null;renderOverlay();refresh();}
  el.addEventListener('pointerup',finish,true);el.addEventListener('pointercancel',finish,true);
  window.ZumiCleanCancel=()=>{if(drawing){drawing=null;draft=null;renderOverlay();refresh();}};
- $('markClean').onclick=()=>{setMode('clean');tell('Marca en la imagen la zona que quieres rellenar o limpiar.');};
+ if($('markClean'))$('markClean').onclick=()=>{setMode('clean');tell('Marca en la imagen la zona que quieres rellenar o limpiar.');};
  function syncCleanShapeUI(){
   const v=$('cleanShape').value;
   $('brushSizeLabel').hidden=v!=='brush';
