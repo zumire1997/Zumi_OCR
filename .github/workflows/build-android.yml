@@ -27,7 +27,7 @@ jobs:
           SDKMANAGER=$(find "$SDK_ROOT/cmdline-tools" -name sdkmanager -type f 2>/dev/null | sort -V | tail -n 1)
           echo "Usando sdkmanager: $SDKMANAGER"
           yes | "$SDKMANAGER" --licenses > /dev/null 2>&1 || true
-          "$SDKMANAGER" "platforms;android-35" "build-tools;35.0.0" "ndk;27.2.12479018"
+          "$SDKMANAGER" "platforms;android-35" "platforms;android-36" "build-tools;35.0.0" "ndk;27.2.12479018"
           echo "NDK_HOME=$SDK_ROOT/ndk/27.2.12479018" >> $GITHUB_ENV
           echo "ANDROID_NDK_HOME=$SDK_ROOT/ndk/27.2.12479018" >> $GITHUB_ENV
           echo "$SDK_ROOT/build-tools/35.0.0" >> $GITHUB_PATH
@@ -59,6 +59,11 @@ jobs:
 
       - name: Aplicar icono de Zumi OCR para Android
         run: cargo tauri icon src-tauri/icons/icon.png
+
+      - name: Ajustar compileSdk de android-fs a API 36
+        run: |
+          cargo fetch --manifest-path src-tauri/Cargo.toml
+          find "${CARGO_HOME:-$HOME/.cargo}/registry/src" -path "*tauri-plugin-android-fs*/android/build.gradle*" -print -exec sed -i -E 's/compileSdk(Version)?[[:space:]]*=?[[:space:]]*[0-9]+/compileSdk = 36/g' {} +
 
       - name: Compilar APK de Zumi OCR (ARM64)
         run: cargo tauri android build --apk --target aarch64
