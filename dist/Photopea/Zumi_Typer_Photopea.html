@@ -127,6 +127,13 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--purple);
 .style-card,.wm-box,.wm-card,.queue{background:var(--surface);border-color:var(--line);border-radius:10px}
 dialog{border-radius:14px;border-color:var(--line);box-shadow:0 16px 42px rgba(0,0,0,.5)}
 dialog::backdrop{background:rgba(10,8,18,.58);backdrop-filter:blur(4px)}
+
+/* Barra superior y bordes seguros en Android */
+body.android-app{height:100dvh!important;display:flex!important;flex-direction:column!important;overflow:hidden!important}
+body.android-app .topbar{flex:none!important;height:auto!important;min-height:44px!important;padding-top:max(env(safe-area-inset-top,0px),30px)!important;padding-bottom:6px!important;padding-left:10px!important;padding-right:10px!important;overflow:visible!important}
+body.android-app .top-actions{flex-wrap:nowrap!important;overflow-x:auto!important;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+body.android-app .top-actions button{flex:0 0 auto!important;white-space:nowrap!important}
+body.android-app main{flex:1 1 auto!important;min-height:0!important;padding-bottom:max(env(safe-area-inset-bottom,0px),10px)!important}
 </style></head><body>
 <header class="topbar"><button id="backToOCR" type="button" hidden style="margin-right:4px;font-size:12px;padding:4px 8px;border-radius:5px;border:1px solid var(--line);background:var(--light);color:var(--purple);font-weight:600">← Zumi OCR</button><div class="brand"><b>Z</b><div><strong>Zumi Typer</strong><small>Photopea · estilos por proyecto · v0.4</small></div></div><div class="top-actions"><span id="connection" role="status">Cargando Photopea…</span><button id="togglePanel" aria-controls="typerPanel" aria-expanded="true">Ocultar panel</button><button id="resetPanelLayout" title="Restablecer tamaño y posición del panel">Restablecer panel</button><button id="themeToggle" data-theme-toggle>☀ Claro</button><button id="connect">Reconectar</button><button id="toggleFullscreen" type="button" title="Pantalla completa manteniendo visible el panel de Zumi Typer">⛶ Pantalla completa</button><button id="help">Ayuda</button></div></header>
 <main><section id="photopeaArea" class="photopea-area"><iframe id="photopea" title="Editor Photopea integrado" allow="clipboard-read; clipboard-write"></iframe></section>
@@ -1252,4 +1259,5 @@ if($('exportCapishotTypeR'))$('exportCapishotTypeR').onclick=()=>jsonDownload(C.
  window.ZumiTyper={state,bridge,core:C,coordinateUI,settings,prepare,startBatch,downloadResults,addImages,refreshDocs,render,renderWatermarks,addWatermarkFiles,pasteWatermarksToPhotopea,storage,commit,installFonts};
 })();
 </script>
+<script>if(/Android/i.test(navigator.userAgent||''))document.body.classList.add('android-app');</script>
 </body></html>

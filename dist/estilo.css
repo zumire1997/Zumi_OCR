@@ -845,3 +845,34 @@ body.android-app main {
     -webkit-overflow-scrolling: touch;
   }
 }
+
+/* Vista vertical (tablet): si ambos paneles están abiertos, la imagen queda arriba, "Tu capítulo" debajo y el panel de Texto/Limpieza a la derecha */
+@media (max-width: 1024px) and (min-width: 561px) and (orientation: portrait) {
+  body.tablet-left-open:not(.tablet-right-closed) main {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) min(285px, 42vw) !important;
+    grid-template-rows: minmax(0, 62%) minmax(0, 38%) !important;
+  }
+  body.tablet-left-open:not(.tablet-right-closed) main > section.workspace {
+    grid-column: 1 !important;
+    grid-row: 1 !important;
+    width: auto !important;
+    height: 100% !important;
+  }
+  body.tablet-left-open:not(.tablet-right-closed) main > aside.sidebar {
+    grid-column: 1 !important;
+    grid-row: 2 !important;
+    display: flex !important;
+    width: auto !important;
+    height: 100% !important;
+    border-right: 1px solid var(--line) !important;
+    border-top: 1px solid var(--line) !important;
+  }
+  body.tablet-left-open:not(.tablet-right-closed) main > aside.editor {
+    grid-column: 2 !important;
+    grid-row: 1 / span 2 !important;
+    display: flex !important;
+    width: auto !important;
+    height: 100% !important;
+  }
+}
