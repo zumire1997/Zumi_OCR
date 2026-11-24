@@ -1,7 +1,9 @@
+#[cfg(desktop)]
 use tauri::Manager;
 #[cfg(desktop)]
 use tauri_plugin_updater::UpdaterExt;
 
+#[cfg(desktop)]
 fn emit_update_status(app: &tauri::AppHandle, state: &str, version: &str, percent: u8, message: &str) {
     if let Some(win) = app.get_webview_window("main") {
         let payload = serde_json::json!({

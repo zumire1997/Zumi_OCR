@@ -1,0 +1,99 @@
+name: Compilar Zumi OCR (.apk para Android)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-android:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar proyecto
+        uses: actions/checkout@v4
+
+      - name: Instalar Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Configurar Android SDK y NDK
+        uses: android-actions/setup-android@v3
+
+      - name: Instalar NDK y Build-Tools
+        run: |
+          yes | sdkmanager --licenses > /dev/null 2>&1 || true
+          sdkmanager "platforms;android-35" "build-tools;35.0.0" "ndk;27.2.12479018"
+          echo "NDK_HOME=$ANDROID_HOME/ndk/27.2.12479018" >> $GITHUB_ENV
+          echo "$ANDROID_HOME/build-tools/35.0.0" >> $GITHUB_PATH
+
+      - name: Instalar Rust para Android (ARM64)
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-linux-android
+
+      - name: Cache de Rust
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: './src-tauri -> target'
+
+      - name: Cache de tauri-cli
+        id: cache-tauri-cli
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/bin/cargo-tauri
+          key: ${{ runner.os }}-tauri-cli-v2-android
+
+      - name: Instalar tauri-cli v2
+        if: steps.cache-tauri-cli.outputs.cache-hit != 'true'
+        run: cargo install tauri-cli --version "^2" --locked
+
+      - name: Inicializar proyecto Android
+        run: cargo tauri android init --ci
+
+      - name: Compilar APK de Zumi OCR (ARM64)
+        run: cargo tauri android build --apk --target aarch64
+
+      - name: Firmar APK para instalacion directa en Android
+        run: |
+          RAW_APK=$(find src-tauri/gen/android/app/build/outputs/apk -type f -name "*.apk" | head -n 1)
+          echo "APK encontrado: $RAW_APK"
+          if [ -z "$RAW_APK" ]; then
+            echo "No se encontro ningun APK generado."
+            exit 1
+          fi
+          zipalign -p -f 4 "$RAW_APK" Zumi_OCR_aligned.apk
+          keytool -genkeypair -v \
+            -keystore zumi-android.jks \
+            -alias zumi \
+            -keyalg RSA -keysize 2048 -validity 10000 \
+            -storepass zumiscan2026 -keypass zumiscan2026 \
+            -dname "CN=Zumi Scan, OU=Mobile, O=Zumi, L=Santo Domingo, C=DO"
+          apksigner sign \
+            --ks zumi-android.jks \
+            --ks-key-alias zumi \
+            --ks-pass pass:zumiscan2026 \
+            --key-pass pass:zumiscan2026 \
+            --out Zumi_OCR_Android.apk \
+            Zumi_OCR_aligned.apk
+          apksigner verify Zumi_OCR_Android.apk
+
+      - name: Subir APK como artefacto descargable
+        uses: actions/upload-artifact@v4
+        with:
+          name: Zumi_OCR_Android_APK
+          path: Zumi_OCR_Android.apk
+
+      - name: Publicar APK en GitHub Releases (android-latest)
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: android-latest
+          name: Zumi OCR para Android (APK)
+          body: Instalador APK de Zumi OCR para tablets y celulares Android (offline, con modo lapiz y gestos tactiles).
+          files: Zumi_OCR_Android.apk
+          prerelease: true
+          make_latest: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

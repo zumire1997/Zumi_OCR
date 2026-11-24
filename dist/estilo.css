@@ -633,3 +633,95 @@ dialog h2{font-size:17px;letter-spacing:-.2px;margin:0 0 10px}
   display:flex;align-items:center;gap:10px;flex-wrap:wrap;
   margin:14px 0 10px;padding:10px 12px;background:var(--surface);border:1px solid var(--line);border-radius:9px;
 }
+
+
+/* === MODO TÁCTIL, LÁPIZ ÓPTICO Y PANELES PLEGABLES (TABLET / ANDROID) === */
+#stage.adding #overlay, #stage.cleaning #overlay {
+  touch-action: none;
+}
+body.pen-only #stage #overlay,
+body.pen-only #stage.adding #overlay,
+body.pen-only #stage.cleaning #overlay {
+  touch-action: pan-x pan-y;
+}
+.pen-toggle-btn {
+  border-radius: 7px;
+  font-size: 11.5px;
+  padding: 5px 9px;
+  white-space: nowrap;
+}
+.pen-toggle-btn.active {
+  background: var(--purple) !important;
+  color: #fff !important;
+  border-color: var(--purple) !important;
+}
+.mobile-drawer-btns {
+  display: none;
+  gap: 5px;
+  align-items: center;
+}
+.mobile-drawer-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 8, 16, 0.52);
+  z-index: 55;
+  backdrop-filter: blur(2px);
+}
+@media (max-width: 1024px) {
+  .mobile-drawer-btns {
+    display: flex;
+  }
+  main {
+    display: block !important;
+    position: relative;
+    height: calc(100dvh - 44px) !important;
+    min-height: 0;
+  }
+  section.workspace {
+    width: 100% !important;
+    height: 100% !important;
+  }
+  aside.sidebar,
+  aside.editor {
+    position: fixed !important;
+    top: 44px !important;
+    bottom: 0 !important;
+    height: auto !important;
+    width: min(330px, 86vw) !important;
+    z-index: 60 !important;
+    box-shadow: 0 12px 34px rgba(0, 0, 0, 0.45);
+    transition: transform 0.2s ease;
+  }
+  aside.sidebar {
+    left: 0 !important;
+    transform: translateX(-105%);
+  }
+  aside.editor {
+    right: 0 !important;
+    transform: translateX(105%);
+  }
+  body.drawer-left aside.sidebar {
+    transform: translateX(0);
+  }
+  body.drawer-right aside.editor {
+    transform: translateX(0);
+  }
+  .image-toolbar {
+    flex-wrap: wrap;
+    gap: 5px;
+    padding: 5px 8px;
+  }
+}
+@media (pointer: coarse) {
+  .image-toolbar button,
+  .clean-actions button,
+  .page-navigation button {
+    min-height: 36px;
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+  #viewport {
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+}
