@@ -892,3 +892,30 @@ body.android-app main {
     align-items: center;
   }
 }
+
+/* Ocultar botones táctiles/móviles en PC de escritorio (solo visibles en Android / tablet / pantallas <= 1024px) */
+.image-toolbar > .mobile-drawer-btns,
+#penOnlyToggle,
+#multiSelectToggle {
+  display: none !important;
+}
+body.android-app .image-toolbar > .mobile-drawer-btns,
+body.android-app #penOnlyToggle,
+body.android-app #multiSelectToggle {
+  display: inline-flex !important;
+  align-items: center;
+}
+@media (max-width: 1024px) {
+  .image-toolbar > .mobile-drawer-btns,
+  #multiSelectToggle {
+    display: inline-flex !important;
+    align-items: center;
+  }
+}
+@media (pointer: coarse) {
+  #penOnlyToggle,
+  #multiSelectToggle {
+    display: inline-flex !important;
+    align-items: center;
+  }
+}
