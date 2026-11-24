@@ -876,3 +876,19 @@ body.android-app main {
     height: 100% !important;
   }
 }
+
+/* Ocultar botón "☑ Varias" en PC de escritorio (solo visible en tablet / pantallas táctiles) */
+#multiSelectToggle {
+  display: none;
+}
+#multiSelectToggle.active {
+  background: var(--purple) !important;
+  color: #fff !important;
+  border-color: var(--purple) !important;
+}
+@media (max-width: 1024px), (pointer: coarse) {
+  #multiSelectToggle {
+    display: inline-flex;
+    align-items: center;
+  }
+}

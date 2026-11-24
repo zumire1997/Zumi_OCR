@@ -1,0 +1,14 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "android-fs-cap",
+  "description": "Permisos para guardar proyectos, coordenadas y ZIP en Android",
+  "platforms": [
+    "android"
+  ],
+  "windows": [
+    "main"
+  ],
+  "permissions": [
+    "android-fs:default"
+  ]
+}

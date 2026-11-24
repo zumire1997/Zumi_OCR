@@ -1,6 +1,6 @@
 [package]
 name = "zumi-ocr"
-version = "0.17.9"
+version = "0.18.0"
 description = "Zumi OCR y Zumi Typer - App de escritorio para scanlation"
 authors = ["Zumi Scan"]
 edition = "2021"
@@ -19,3 +19,6 @@ serde_json = "1"
 
 [target.'cfg(any(target_os = "macos", windows, target_os = "linux"))'.dependencies]
 tauri-plugin-updater = "2"
+
+[target.'cfg(target_os = "android")'.dependencies]
+tauri-plugin-android-fs = "=7.0.0"

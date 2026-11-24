@@ -123,9 +123,70 @@ fn open_external_url(url: String) -> Result<(), String> {
     Ok(())
 }
 
+
+#[cfg(target_os = "android")]
+fn decode_base64_bytes(input: &str) -> Result<Vec<u8>, String> {
+    let mut out = Vec::with_capacity((input.len() * 3) / 4);
+    let mut buf: u32 = 0;
+    let mut bits: u8 = 0;
+    for b in input.bytes() {
+        let val = match b {
+            b'A'..=b'Z' => b - b'A',
+            b'a'..=b'z' => b - b'a' + 26,
+            b'0'..=b'9' => b - b'0' + 52,
+            b'+' => 62,
+            b'/' => 63,
+            b'=' => break,
+            b' ' | b'\n' | b'\r' | b'\t' => continue,
+            _ => return Err("Base64 invalido".into()),
+        };
+        buf = (buf << 6) | (val as u32);
+        bits += 6;
+        if bits >= 8 {
+            bits -= 8;
+            out.push(((buf >> bits) & 0xff) as u8);
+        }
+    }
+    Ok(out)
+}
+
+#[tauri::command]
+async fn save_android_file(
+    app: tauri::AppHandle,
+    file_name: String,
+    mime_type: String,
+    contents_base64: String,
+) -> Result<bool, String> {
+    #[cfg(target_os = "android")]
+    {
+        use tauri_plugin_android_fs::{AndroidFs, AndroidFsExt};
+        let bytes = decode_base64_bytes(&contents_base64)?;
+        let api = app.android_fs();
+        let file_uri = api
+            .show_save_file_dialog(None, &file_name, Some(&mime_type))
+            .map_err(|e| e.to_string())?;
+        let Some(file_uri) = file_uri else {
+            return Ok(false);
+        };
+        if let Err(e) = api.write(&file_uri, &bytes) {
+            let _ = api.remove_file(&file_uri);
+            return Err(e.to_string());
+        }
+        return Ok(true);
+    }
+    #[cfg(not(target_os = "android"))]
+    {
+        let _ = (app, file_name, mime_type, contents_base64);
+        Ok(false)
+    }
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    tauri::Builder::default()
+    let builder = tauri::Builder::default();
+    #[cfg(target_os = "android")]
+    let builder = builder.plugin(tauri_plugin_android_fs::init());
+    builder
         .setup(|app| {
             #[cfg(desktop)]
             {
@@ -137,7 +198,7 @@ pub fn run() {
             }
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![check_update_manual, open_external_url])
+        .invoke_handler(tauri::generate_handler![check_update_manual, open_external_url, save_android_file])
         .run(tauri::generate_context!())
         .expect("error al iniciar Zumi OCR");
 }
