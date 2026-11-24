@@ -634,8 +634,7 @@ dialog h2{font-size:17px;letter-spacing:-.2px;margin:0 0 10px}
   margin:14px 0 10px;padding:10px 12px;background:var(--surface);border:1px solid var(--line);border-radius:9px;
 }
 
-
-/* === MODO TÁCTIL, LÁPIZ ÓPTICO Y PANELES PLEGABLES (TABLET / ANDROID) === */
+/* === MODO TÁCTIL, LÁPIZ ÓPTICO Y PANELES EN PANTALLA DIVIDIDA (TABLET / ANDROID) === */
 #stage.adding #overlay, #stage.cleaning #overlay {
   touch-action: none;
 }
@@ -660,58 +659,165 @@ body.pen-only #stage.cleaning #overlay {
   gap: 5px;
   align-items: center;
 }
-.mobile-drawer-backdrop {
-  position: fixed;
-  inset: 0;
-  background: rgba(10, 8, 16, 0.52);
-  z-index: 55;
-  backdrop-filter: blur(2px);
+.mobile-drawer-btns button.active {
+  background: var(--purple) !important;
+  color: #fff !important;
+  border-color: var(--purple) !important;
 }
+.mobile-drawer-backdrop {
+  display: none !important;
+}
+
+/* Barra superior segura en Android (evita solapamiento con hora/batería) */
+body.android-app {
+  height: 100dvh !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+}
+body.android-app .topbar {
+  flex: none !important;
+  height: auto !important;
+  min-height: 44px !important;
+  padding-top: max(env(safe-area-inset-top, 0px), 30px) !important;
+  padding-bottom: 6px !important;
+  padding-left: 10px !important;
+  padding-right: 10px !important;
+  gap: 8px !important;
+  overflow: visible !important;
+}
+body.android-app .top-actions {
+  flex-wrap: nowrap !important;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  gap: 4px !important;
+  padding-bottom: 2px;
+}
+body.android-app .top-actions::-webkit-scrollbar {
+  display: none;
+}
+body.android-app .top-actions button {
+  flex: 0 0 auto !important;
+  white-space: nowrap !important;
+}
+body.android-app main {
+  flex: 1 1 auto !important;
+  height: auto !important;
+  min-height: 0 !important;
+  padding-bottom: max(env(safe-area-inset-bottom, 0px), 10px) !important;
+}
+
+/* Tablets y pantallas medianas: imagen y panel SIEMPRE lado a lado sin oscurecer */
 @media (max-width: 1024px) {
+  body {
+    height: 100dvh !important;
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
+  }
+  .topbar {
+    flex: none !important;
+    height: auto !important;
+    min-height: 42px !important;
+    padding: 6px 10px !important;
+    gap: 8px !important;
+  }
+  .top-actions {
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .top-actions button {
+    flex: 0 0 auto !important;
+    white-space: nowrap !important;
+  }
   .mobile-drawer-btns {
     display: flex;
   }
   main {
-    display: block !important;
-    position: relative;
-    height: calc(100dvh - 44px) !important;
-    min-height: 0;
-  }
-  section.workspace {
-    width: 100% !important;
-    height: 100% !important;
-  }
-  aside.sidebar,
-  aside.editor {
-    position: fixed !important;
-    top: 44px !important;
-    bottom: 0 !important;
+    flex: 1 1 auto !important;
     height: auto !important;
-    width: min(330px, 86vw) !important;
-    z-index: 60 !important;
-    box-shadow: 0 12px 34px rgba(0, 0, 0, 0.45);
-    transition: transform 0.2s ease;
+    min-height: 0 !important;
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) min(290px, 40vw) !important;
+    grid-template-rows: minmax(0, 1fr) !important;
+    overflow: hidden !important;
   }
-  aside.sidebar {
-    left: 0 !important;
-    transform: translateX(-105%);
+  main > aside.sidebar {
+    display: none !important;
+    position: static !important;
+    transform: none !important;
+    width: auto !important;
+    height: 100% !important;
+    min-height: 0 !important;
+    overflow-y: auto !important;
+    z-index: auto !important;
+    box-shadow: none !important;
   }
-  aside.editor {
-    right: 0 !important;
-    transform: translateX(105%);
+  main > section.workspace {
+    width: auto !important;
+    height: 100% !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
   }
-  body.drawer-left aside.sidebar {
-    transform: translateX(0);
+  main > aside.editor {
+    display: flex !important;
+    flex-direction: column !important;
+    position: static !important;
+    transform: none !important;
+    width: auto !important;
+    height: 100% !important;
+    min-height: 0 !important;
+    z-index: auto !important;
+    box-shadow: none !important;
   }
-  body.drawer-right aside.editor {
-    transform: translateX(0);
+
+  /* Combinaciones de paneles abiertos lado a lado */
+  body.tablet-left-open main {
+    grid-template-columns: 175px minmax(0, 1fr) min(270px, 36vw) !important;
   }
+  body.tablet-left-open main > aside.sidebar {
+    display: flex !important;
+  }
+  body.tablet-right-closed main {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+  body.tablet-right-closed main > aside.editor {
+    display: none !important;
+  }
+  body.tablet-left-open.tablet-right-closed main {
+    grid-template-columns: 195px minmax(0, 1fr) !important;
+  }
+
   .image-toolbar {
     flex-wrap: wrap;
     gap: 5px;
     padding: 5px 8px;
   }
 }
+
+/* Celulares angostos: pantalla dividida arriba (imagen) y abajo (panel) */
+@media (max-width: 560px) {
+  main,
+  body.tablet-left-open main {
+    grid-template-columns: minmax(0, 1fr) !important;
+    grid-template-rows: minmax(0, 56%) minmax(0, 44%) !important;
+  }
+  body.tablet-left-open main > aside.editor {
+    display: none !important;
+  }
+  body.tablet-left-open main > aside.sidebar {
+    display: flex !important;
+  }
+  body.tablet-right-closed:not(.tablet-left-open) main {
+    grid-template-rows: minmax(0, 1fr) !important;
+  }
+}
+
 @media (pointer: coarse) {
   .image-toolbar button,
   .clean-actions button,

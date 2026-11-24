@@ -6,6 +6,11 @@
  let gestureActive = false;
  let gestureCooldown = 0;
 
+ // Detect Android WebView / Android device for safe status-bar padding
+ if (/Android/i.test(navigator.userAgent || '')) {
+  document.body.classList.add('android-app');
+ }
+
  function syncPenUI(){
   const btn = $('penOnlyToggle');
   document.body.classList.toggle('pen-only', penOnly);
@@ -100,40 +105,37 @@
   viewport.addEventListener('touchcancel', endPinch, { passive: true });
  }
 
- // Collapsible tablet/mobile drawers
+ // Split-screen side-by-side panel toggles (NO dark backdrop blocking the image)
  const leftBtn = $('mobileSidebarBtn');
  const rightBtn = $('mobileEditorBtn');
  const backdrop = $('mobileDrawerBackdrop');
+ if (backdrop) backdrop.hidden = true;
 
- function closeDrawers(){
-  document.body.classList.remove('drawer-left', 'drawer-right');
-  if (backdrop) backdrop.hidden = true;
- }
- function toggleDrawer(side){
-  const cls = side === 'left' ? 'drawer-left' : 'drawer-right';
-  const other = side === 'left' ? 'drawer-right' : 'drawer-left';
-  document.body.classList.remove(other);
-  const open = document.body.classList.toggle(cls);
-  if (backdrop) backdrop.hidden = !open;
+ function syncPanelBtns(){
+  const leftOpen = document.body.classList.contains('tablet-left-open');
+  const rightOpen = !document.body.classList.contains('tablet-right-closed');
+  if (leftBtn) leftBtn.classList.toggle('active', leftOpen);
+  if (rightBtn) rightBtn.classList.toggle('active', rightOpen);
  }
 
- if (leftBtn) leftBtn.onclick = () => toggleDrawer('left');
- if (rightBtn) rightBtn.onclick = () => toggleDrawer('right');
- if (backdrop) backdrop.onclick = closeDrawers;
-
- document.addEventListener('keydown', e => {
-  if (e.key === 'Escape' && (document.body.classList.contains('drawer-left') || document.body.classList.contains('drawer-right'))) {
-   closeDrawers();
-  }
- });
-
- // Auto-close left drawer after choosing a page on tablet/phone
- const pagesEl = $('pages');
- if (pagesEl) {
-  pagesEl.addEventListener('click', e => {
-   if (window.innerWidth <= 1024 && e.target.closest('.page-item, button')) {
-    setTimeout(closeDrawers, 60);
+ if (leftBtn) {
+  leftBtn.onclick = () => {
+   document.body.classList.toggle('tablet-left-open');
+   syncPanelBtns();
+   window.dispatchEvent(new Event('resize'));
+  };
+ }
+ if (rightBtn) {
+  rightBtn.onclick = () => {
+   if (window.innerWidth <= 560 && document.body.classList.contains('tablet-left-open')) {
+    document.body.classList.remove('tablet-left-open');
+    document.body.classList.remove('tablet-right-closed');
+   } else {
+    document.body.classList.toggle('tablet-right-closed');
    }
-  });
+   syncPanelBtns();
+   window.dispatchEvent(new Event('resize'));
+  };
  }
+ syncPanelBtns();
 })();

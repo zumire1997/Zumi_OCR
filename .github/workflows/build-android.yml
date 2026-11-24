@@ -57,6 +57,9 @@ jobs:
       - name: Inicializar proyecto Android
         run: cargo tauri android init --ci
 
+      - name: Aplicar icono de Zumi OCR para Android
+        run: cargo tauri icon src-tauri/icons/icon.png
+
       - name: Compilar APK de Zumi OCR (ARM64)
         run: cargo tauri android build --apk --target aarch64
 
