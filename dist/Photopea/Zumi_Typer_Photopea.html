@@ -145,7 +145,19 @@ body.android-app main{flex:1 1 auto!important;min-height:0!important;padding-bot
   <div class="step"><div class="step-title"><b>2</b><strong>Páginas de destino</strong></div><select id="destination" aria-label="Páginas de destino"><option value="files">Abrir imágenes limpias o PSD</option><option value="docs">Usar documentos abiertos en Photopea</option></select><div id="fileActions" class="actions"><button id="loadFiles">Imágenes / PSD</button><button id="loadFolder">Carpeta</button></div><div id="docActions" class="actions" hidden><button id="refreshDocs">Actualizar documentos abiertos</button></div><input id="imageFiles" type="file" multiple accept=".png,.jpg,.jpeg,.webp,.bmp,.psd" hidden><input id="imageFolder" type="file" multiple webkitdirectory hidden><span id="resourceSummary" class="small"></span></div>
   <div class="compact-grid"><label>Contenido<select id="content"><option value="translation">Español / traducción</option><option value="exported">Texto elegido al exportar</option><option value="original">Original del OCR</option></select></label><label>Resultado<select id="output"><option value="zip">PSD en un ZIP</option><option value="layers">Solo capas en Photopea</option></select></label></div>
   <details class="advanced"><summary>Opciones del lote</summary><label>Distribución<select id="layout"><option value="center">Centrar textos sin recortarlos</option><option value="paragraph">Usar cajas exactas del JSON</option></select></label><label>Si un prefijo no tiene estilo<select id="missing"><option value="stop">Avisar y detener</option><option value="default">Usar estilo predeterminado</option></select></label><label>Si ya existe un grupo Zumi<select id="duplicate"><option value="skip">Omitir esa página</option><option value="backup">Ocultar el anterior y guardar una copia</option></select></label><label class="check"><input id="preserveBreaks" type="checkbox" checked>Conservar saltos escritos en español</label><label class="check"><input id="keepOpen" type="checkbox">Dejar abiertas las páginas nuevas</label><label class="check"><input id="folderPerPage" type="checkbox">Elegir carpeta de estilos por página</label></details>
-  <details id="coordinateReport" hidden><summary>Importación revisada</summary><span class="small"></span></details>  <div class="wm-box">
+  <details id="coordinateReport" hidden><summary>Importación revisada</summary><span class="small"></span></details>
+  <div class="wm-box">
+   <div class="wm-box-head"><strong>RAW de referencia · Encima de la limpia</strong><span id="rawSummary" class="small">Sin RAWs</span></div>
+   <div class="actions"><button id="loadRawFiles" type="button">Cargar RAWs</button><button id="loadRawFolder" type="button">Carpeta RAWs</button><button id="clearRawFiles" type="button" class="mini" hidden>Quitar</button></div>
+   <input id="rawFilesInput" type="file" multiple accept=".png,.jpg,.jpeg,.webp,.bmp,.psd" hidden>
+   <input id="rawFolderInput" type="file" multiple webkitdirectory hidden>
+   <div class="compact-grid" style="margin-top:6px;align-items:center">
+    <label class="check" style="margin:0"><input id="enableRawOverlay" type="checkbox">Pegar RAW encima</label>
+    <label style="margin:0">Opacidad (%)<input id="rawOverlayOpacity" type="number" min="5" max="100" step="5" value="65"></label>
+   </div>
+   <div class="actions" style="margin-top:6px"><button id="pasteRawActive" type="button" class="mini">Pegar RAW en tira actual</button></div>
+  </div>
+  <div class="wm-box">
    <div class="wm-box-head"><strong>Marcas de agua · Tiras</strong><button id="openWatermarksTab" type="button" class="mini">Configurar PNGs</button></div>
    <div class="compact-grid">
     <label>Banner derecha (45%)<select id="batchBannerSelect"><option value="">Sin banner</option></select></label>
@@ -524,6 +536,41 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     }
     return {ok:true,pending:false,count:1};
    }
+   if(data.action==='placeRawOverlay'){
+    if(data.expectedCount&&app.documents.length!==data.expectedCount)return result(false,'Photopea no abrió el RAW de referencia.');
+    var rawDoc=app.activeDocument;
+    var destDoc=documentFor(data.target);
+    if(!destDoc&&data.target&&data.target.name){for(var ri=0;ri<app.documents.length;ri++)if(app.documents[ri].name===data.target.name&&app.documents[ri]!==rawDoc){destDoc=app.documents[ri];break;}}
+    if(!destDoc||destDoc===rawDoc){try{rawDoc.close(SaveOptions.DONOTSAVECHANGES);}catch(ignore){}return result(false,'No se encontró la tira limpia de destino para el RAW.');}
+    try{
+     app.activeDocument=rawDoc;
+     if(rawDoc.layers.length>1){try{rawDoc.flatten();}catch(ignore){}}
+     var srcLayer=rawDoc.layers[0];
+     try{srcLayer.name='__ZUMI_RAW_TEMP__';}catch(ignore){}
+     var dup=srcLayer.duplicate(destDoc,ElementPlacement.PLACEATBEGINNING);
+     app.activeDocument=destDoc;
+     var placed=dup;
+     if(!placed){for(var li=0;li<destDoc.layers.length;li++){if(destDoc.layers[li].name==='__ZUMI_RAW_TEMP__'){placed=destDoc.layers[li];break;}}}
+     if(!placed)placed=destDoc.layers[0];
+     destDoc.activeLayer=placed;
+     var op=Math.max(1,Math.min(100,Number(data.opacity)||65));
+     try{placed.name='RAW ('+Math.round(op)+'%) · '+(data.name||'referencia');}catch(ignore){}
+     try{placed.opacity=op;}catch(ignore){}
+     try{
+      var bb=placed.bounds,left=px(bb[0]),top=px(bb[1]),right=px(bb[2]),bottom=px(bb[3]);
+      var lw=right-left,lh=bottom-top,dw=px(destDoc.width),dh=px(destDoc.height);
+      if(lw>0&&lh>0&&(Math.abs(lw-dw)>2||Math.abs(lh-dh)>2)){
+       placed.resize((dw/lw)*100,(dh/lh)*100,AnchorPosition.TOPLEFT);
+       bb=placed.bounds;left=px(bb[0]);top=px(bb[1]);
+      }
+      if(left===left&&top===top&&(Math.abs(left)>0.5||Math.abs(top)>0.5))placed.translate(-left,-top);
+     }catch(ignore){}
+    }finally{
+     try{app.activeDocument=rawDoc;rawDoc.close(SaveOptions.DONOTSAVECHANGES);}catch(ignore){}
+     try{app.activeDocument=destDoc;}catch(ignore){}
+    }
+    return {ok:true,message:'RAW colocado encima al '+(Number(data.opacity)||65)+'%.'};
+   }
    if(data.action==='claim'){if(app.documents.length!==data.expectedCount)return result(false,'Photopea no abrió exactamente una página nueva. No se modificó el documento anterior.');var d=app.activeDocument;d.name=data.name;d.source=data.source;return {ok:true,doc:{name:d.name,source:d.source,width:px(d.width),height:px(d.height)}};}
    var doc=documentFor(data.target);if(!doc)return result(false,'La página seleccionada ya no está abierta. Actualiza la lista de documentos.');
    app.activeDocument=doc;
@@ -679,10 +726,10 @@ window.ZumiCoordinateUI=function({C,$,state,folder,checkpoint,persist,render,rem
  const openerToken=new URLSearchParams(location.hash.slice(1)).get('zumi-token')||'';
  const hostWin=window.opener||(window.parent!==window?window.parent:null);
  const C=ZumiCore,$=id=>document.getElementById(id),seed=C.library(JSON.parse($('zumi-seed').textContent));
- const state={library:seed,pages:[],files:[],docs:[],jobs:[],fonts:[],watermarks:[],activeBannerId:'',activeLogoId:'',outputs:[],manual:[],busy:false,stop:false,installing:false,downloaded:true};
+ const state={library:seed,pages:[],files:[],rawFiles:[],docs:[],jobs:[],fonts:[],watermarks:[],activeBannerId:'',activeLogoId:'',outputs:[],manual:[],busy:false,stop:false,installing:false,downloaded:true};
  const pluginMode=new URLSearchParams(location.search).get('plugin')==='1'&&parent!==window;
  let db=null,toastTimer=null,initTimer=null,styleUndo=[],folderOp='',editingStyleId='',pendingImport=null,installedFonts=new Set(),installing=Promise.resolve(),persistChain=Promise.resolve();
- const inputs=['content','output','layout','missing','duplicate','preserveBreaks','keepOpen','folderPerPage','rememberFonts','rememberWatermarks','autoWatermarksBatch','wmBannerY','wmLogoY','destination'];
+ const inputs=['content','output','layout','missing','duplicate','preserveBreaks','keepOpen','folderPerPage','rememberFonts','rememberWatermarks','autoWatermarksBatch','wmBannerY','wmLogoY','destination','enableRawOverlay','rawOverlayOpacity'];
  const textFields=['name','prefixes','font','weight','case','size','unit','color','align','leading','wrap','strokeSize','strokeColor','hScale','vScale','tracking','antiAlias'];
  function node(tag,cls,value){const n=document.createElement(tag);if(cls)n.className=cls;if(value!==undefined)n.textContent=value;return n;}
  function toast(message,error=false){clearTimeout(toastTimer);$('toast').querySelector('span').textContent=message;$('toast').classList.toggle('error',error);$('toast').hidden=false;toastTimer=setTimeout(()=>$('toast').hidden=true,error?12000:7000);}
@@ -1212,6 +1259,64 @@ if($('exportCapishotTypeR'))$('exportCapishotTypeR').onclick=()=>jsonDownload(C.
  $('downloadResults').onclick=()=>downloadResults().catch(e=>toast(e.message,true));
  function nativeStyle(s){return C.resolveFont(s,state.fonts);}
  function nativePage(p){return {...p,boxes:p.boxes.map(b=>{const s=nativeStyle(b.style);let value=s.case==='uppercase'?b.text.toUpperCase():s.case==='lowercase'?b.text.toLowerCase():b.text;value=C.wrapText(value,s.wrap,$('preserveBreaks').checked);return {...b,text:value,style:s};})};}
+ function rawStem(name){return String(name||'').replace(/\.[^.]+$/,'').toLowerCase().trim();}
+ function rawNum(name){const m=rawStem(name).match(/(\d+)(?!.*\d)/);return m?Number(m[1]):null;}
+ function findMatchingRaw(pageName,resName,index){
+  if(!state.rawFiles.length)return null;
+  const targets=[rawStem(pageName),rawStem(resName)].filter(Boolean);
+  for(const t of targets){
+   const exact=state.rawFiles.find(f=>rawStem(f.name)===t);
+   if(exact)return exact;
+  }
+  const nums=[rawNum(pageName),rawNum(resName)].filter(n=>n!==null);
+  for(const n of nums){
+   const byNum=state.rawFiles.find(f=>rawNum(f.name)===n);
+   if(byNum)return byNum;
+  }
+  return state.rawFiles[index]||null;
+ }
+ function updateRawSummary(){
+  const n=state.rawFiles.length;
+  if($('rawSummary'))$('rawSummary').textContent=n?(n+' '+(n===1?'RAW listo':'RAWs listos')):'Sin RAWs';
+  if($('clearRawFiles'))$('clearRawFiles').hidden=!n;
+ }
+ function addRawFiles(fileList){
+  const imgs=[...fileList].filter(f=>/\.(png|jpe?g|webp|bmp|psd)$/i.test(f.name)).sort((a,b)=>a.name.localeCompare(b.name,undefined,{numeric:true,sensitivity:'base'}));
+  if(!imgs.length)return toast('No se encontraron imágenes RAW válidas.',true);
+  state.rawFiles=imgs;
+  if($('enableRawOverlay')){$('enableRawOverlay').checked=true;persistPrefs();}
+  updateRawSummary();
+  toast(imgs.length+' '+(imgs.length===1?'RAW cargado':'RAWs cargados')+' para colocar al '+($('rawOverlayOpacity')?.value||65)+'%.');
+ }
+ async function placeRawOnTarget(target,rawFile){
+  const op=Math.max(5,Math.min(100,Number($('rawOverlayOpacity')?.value)||65));
+  const before=(await bridge.command({action:'docs'})).docs.length;
+  const rawBuf=await rawFile.arrayBuffer();
+  await bridge.operation(rawBuf);
+  await bridge.command({action:'placeRawOverlay',expectedCount:before+1,target,name:rawFile.name,opacity:op});
+ }
+ if($('loadRawFiles'))$('loadRawFiles').onclick=()=>$('rawFilesInput').click();
+ if($('loadRawFolder'))$('loadRawFolder').onclick=()=>$('rawFolderInput').click();
+ if($('rawFilesInput'))$('rawFilesInput').onchange=e=>{addRawFiles(e.target.files);e.target.value='';};
+ if($('rawFolderInput'))$('rawFolderInput').onchange=e=>{addRawFiles(e.target.files);e.target.value='';};
+ if($('clearRawFiles'))$('clearRawFiles').onclick=()=>{state.rawFiles=[];updateRawSummary();toast('RAWs de referencia quitados.');};
+ if($('pasteRawActive'))$('pasteRawActive').onclick=async()=>{
+  if(state.busy||state.installing)return;
+  if(!bridge.ready)return toast('Espera a que Photopea esté conectado.',true);
+  if(!state.rawFiles.length)return toast('Carga primero tus imágenes RAW con «Cargar RAWs» o «Carpeta RAWs».',true);
+  busy(true);
+  try{
+   const docInfo=await bridge.command({action:'docs'});
+   const docs=docInfo.docs||[];
+   if(!docs.length)throw Error('Abre primero una tira limpia en Photopea.');
+   const act=docs[docInfo.activeIndex>=0?docInfo.activeIndex:0];
+   const rawFile=findMatchingRaw(act.name,act.name,0);
+   if(!rawFile)throw Error('No encontré un RAW que coincida con '+act.name);
+   await placeRawOnTarget({index:act.index,name:act.name,source:act.source||''},rawFile);
+   toast('RAW «'+rawFile.name+'» pegado encima al '+(Number($('rawOverlayOpacity')?.value)||65)+'%.');
+  }catch(e){toast(e.message,true);}
+  finally{busy(false);}
+ };
  async function startBatch(){
   if(state.busy)return;const selected=state.jobs.filter(j=>j.selected);if(!bridge.ready||!selected.length||!selected.every(valid))return toast('Revisa las páginas, sus destinos y los estilos antes de pegar.',true);
   busy(true);state.stop=false;let completed=0;const batch=C.uid(),opts=settings(),names=C.outputNames(selected.map(j=>j.page));$('batchProgress').hidden=false;$('batchProgress').max=selected.length;$('batchProgress').value=0;
@@ -1226,6 +1331,10 @@ if($('exportCapishotTypeR'))$('exportCapishotTypeR').onclick=()=>jsonDownload(C.
       const before=(await bridge.command({action:'docs'})).docs.length;const buffer=await resource.file.arrayBuffer();if(state.stop)break;await bridge.operation(buffer);
       ownedSource='zumi-owned:'+batch+':'+index;await bridge.command({action:'claim',expectedCount:before+1,name:resource.name,source:ownedSource});target={source:ownedSource};
      }else target={index:resource.index,name:resource.name,source:resource.source};
+     if($('enableRawOverlay')?.checked&&state.rawFiles.length){
+      const rawFile=findMatchingRaw(job.page.filename,resource.name,index);
+      if(rawFile)await placeRawOnTarget(target,rawFile);
+     }
      const result=await bridge.command({action:'paste',target,page:p,layout:opts.layout,duplicate:opts.duplicate,batch});
      if(!result.skipped&&$('autoWatermarksBatch').checked){const wms=getSelectedWatermarks();if(wms.length)await placeWatermarksOnTargets([target],wms);}
      if(result.skipped){job.status='Omitida: ya tiene grupo Zumi.';job.done=true;}
