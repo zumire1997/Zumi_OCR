@@ -587,8 +587,8 @@ https://github.com/nodeca/pako/blob/main/LICENSE
      }
      if(left===left&&top===top&&(Math.abs(left)>0.5||Math.abs(top)>0.5))placed.translate(-left,-top);
     }catch(ignore){}
+    try{var bg=tDoc.layers[tDoc.layers.length-1];if(bg&&bg!==placed){try{placed.move(bg,ElementPlacement.PLACEBEFORE);}catch(ignore){}try{bg.allLocked=true;}catch(ignore){}}}catch(ignore){}
     try{placed.positionLocked=true;}catch(ignore){}
-    try{var bg=tDoc.layers[tDoc.layers.length-1];if(bg&&bg!==placed)bg.allLocked=true;}catch(ignore){}
     return {ok:true,pending:false,message:'RAW colocado al '+Math.round(op)+'%.'};
    }
    if(data.action==='claim'){if(app.documents.length!==data.expectedCount)return result(false,'Photopea no abrió exactamente una página nueva. No se modificó el documento anterior.');var d=app.activeDocument;d.name=data.name;d.source=data.source;return {ok:true,doc:{name:d.name,source:d.source,width:px(d.width),height:px(d.height)}};}
@@ -610,7 +610,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
    if(existing&&data.duplicate==='skip')return {ok:true,skipped:true,message:'Ya tiene un grupo Zumi. Se conservó.'};
    if(existing&&data.duplicate!=='append'){backup=existing;backupName=existing.name;backupVisible=existing.visible;existing.name=name+' · anterior '+data.batch;existing.visible=false;}
    if(existing&&data.duplicate==='append')group=existing;
-   else{if(doc.layers.length)doc.activeLayer=doc.layers[doc.layers.length-1];group=doc.layerSets.add();group.name=name;createdGroup=true;}
+   else{if(doc.layers.length)doc.activeLayer=doc.layers[0];group=doc.layerSets.add();group.name=name;try{if(doc.layers.length&&doc.layers[0]!==group)group.move(doc.layers[0],ElementPlacement.PLACEBEFORE);}catch(ignore){}createdGroup=true;}
    for(var i=0;i<p.boxes.length;i++){
     var b=p.boxes[i],s=b.style,layer=group.artLayers.add();addedLayers.push(layer);layer.kind=LayerKind.TEXT;layer.name=('0000'+(i+1)).slice(-4)+' · '+(b.prefix?b.prefix+' · ':'')+b.id;
     var ti=layer.textItem;
