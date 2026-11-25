@@ -135,7 +135,7 @@ body.android-app .top-actions{flex-wrap:nowrap!important;overflow-x:auto!importa
 body.android-app .top-actions button{flex:0 0 auto!important;white-space:nowrap!important}
 body.android-app main{flex:1 1 auto!important;min-height:0!important;padding-bottom:max(env(safe-area-inset-bottom,0px),10px)!important}
 </style></head><body>
-<header class="topbar"><button id="backToOCR" type="button" hidden style="margin-right:4px;font-size:12px;padding:4px 8px;border-radius:5px;border:1px solid var(--line);background:var(--light);color:var(--purple);font-weight:600">← Zumi OCR</button><div class="brand"><b>Z</b><div><strong>Zumi Typer</strong><small>Photopea · estilos por proyecto · v0.4</small></div></div><div class="top-actions"><span id="connection" role="status">Cargando Photopea…</span><button id="togglePanel" aria-controls="typerPanel" aria-expanded="true">Ocultar panel</button><button id="resetPanelLayout" title="Restablecer tamaño y posición del panel">Restablecer panel</button><button id="themeToggle" data-theme-toggle>☀ Claro</button><button id="connect">Reconectar</button><button id="toggleFullscreen" type="button" title="Pantalla completa manteniendo visible el panel de Zumi Typer">⛶ Pantalla completa</button><button id="help">Ayuda</button></div></header>
+<header class="topbar"><button id="backToOCR" type="button" hidden style="margin-right:4px;font-size:12px;padding:4px 8px;border-radius:5px;border:1px solid var(--line);background:var(--light);color:var(--purple);font-weight:600">← Zumi OCR</button><div class="brand"><b>Z</b><div><strong>Zumi Typer</strong><small>Photopea · estilos por proyecto · v0.4</small></div></div><div class="top-actions"><span id="connection" role="status">Cargando Photopea…</span><button id="saveAllOpenPSDsTop" type="button" title="Exporta todas las pestañas abiertas en Photopea como archivos PSD dentro de un solo ZIP">💾 Guardar PSDs</button><button id="togglePanel" aria-controls="typerPanel" aria-expanded="true">Ocultar panel</button><button id="resetPanelLayout" title="Restablecer tamaño y posición del panel">Restablecer panel</button><button id="themeToggle" data-theme-toggle>☀ Claro</button><button id="connect">Reconectar</button><button id="toggleFullscreen" type="button" title="Pantalla completa manteniendo visible el panel de Zumi Typer">⛶ Pantalla completa</button><button id="help">Ayuda</button></div></header>
 <main><section id="photopeaArea" class="photopea-area"><iframe id="photopea" title="Editor Photopea integrado" allow="clipboard-read; clipboard-write"></iframe></section>
 <aside id="typerPanel" class="panel">
  <div class="project-bar"><label for="folderSelect">Carpeta de estilos</label><select id="folderSelect"></select><span id="folderSummary"></span></div>
@@ -1278,6 +1278,42 @@ if($('exportCapishotTypeR'))$('exportCapishotTypeR').onclick=()=>jsonDownload(C.
   $('batchStatus').textContent='Preparando ZIP con '+state.outputs.length+' PSD…';const blob=await zip.generateAsync({type:'blob',compression:'STORE',platform:'DOS'});download(blob,'Zumi_Type_'+C.safeName(folder().name)+'.zip');state.downloaded=true;$('batchStatus').textContent=state.outputs.length+' PSD disponibles en el ZIP.';
  }
  $('downloadResults').onclick=()=>downloadResults().catch(e=>toast(e.message,true));
+ async function saveAllOpenPSDs(){
+  if(state.busy||state.installing)return;
+  if(!bridge.ready)return toast('Espera a que Photopea esté conectado.',true);
+  busy(true);
+  try{
+   const docInfo=await bridge.command({action:'docs'});
+   const docs=docInfo.docs||[];
+   if(!docs.length)throw Error('No hay documentos abiertos en Photopea para guardar.');
+   const zip=new JSZip();
+   const usedNames=new Set();
+   $('batchProgress').hidden=false;$('batchProgress').max=docs.length;$('batchProgress').value=0;
+   for(let i=0;i<docs.length;i++){
+    const d=docs[i];
+    $('batchStatus').textContent='Guardando PSD '+(i+1)+' / '+docs.length+' · '+d.name;
+    const target={index:d.index,name:d.name,source:d.source||''};
+    const out=await bridge.command({action:'export',target},{binary:true,timeout:180000});
+    if(!out.buffer?.byteLength)throw Error('Photopea no devolvió el PSD de '+d.name);
+    let base=String(d.name||('pagina_'+(i+1))).replace(/\.(psd|png|jpe?g|webp|bmp)+$/i,'').trim()||('pagina_'+(i+1));
+    let fname=base+'.psd',n=2;
+    while(usedNames.has(fname.toLowerCase())){fname=base+'_'+n+'.psd';n++;}
+    usedNames.add(fname.toLowerCase());
+    zip.file(fname,out.buffer);
+    $('batchProgress').value=i+1;
+   }
+   $('batchStatus').textContent='Empaquetando '+docs.length+' PSD en ZIP…';
+   const blob=await zip.generateAsync({type:'blob',compression:'STORE',platform:'DOS'});
+   const zipName='Zumi_PSDs_'+C.safeName(folder()?.name||'capitulo')+'.zip';
+   download(blob,zipName);
+   $('batchStatus').textContent=docs.length+(docs.length===1?' PSD guardado':' PSD guardados')+' en '+zipName;
+   toast(docs.length+(docs.length===1?' PSD guardado':' PSD guardados')+' en '+zipName);
+  }catch(e){toast(e.message,true);$('batchStatus').textContent=e.message;}
+  finally{busy(false);}
+ }
+ if($('saveAllOpenPSDs'))$('saveAllOpenPSDs').onclick=saveAllOpenPSDs;
+ if($('saveAllOpenPSDsTop'))$('saveAllOpenPSDsTop').onclick=saveAllOpenPSDs;
+
  function nativeStyle(s){return C.resolveFont(s,state.fonts);}
  function nativePage(p){return {...p,boxes:p.boxes.map(b=>{const s=nativeStyle(b.style);let value=s.case==='uppercase'?b.text.toUpperCase():s.case==='lowercase'?b.text.toLowerCase():b.text;value=C.wrapText(value,s.wrap,$('preserveBreaks').checked);return {...b,text:value,style:s};})};}
  function rawStem(name){return String(name||'').replace(/\.[^.]+$/,'').toLowerCase().trim();}
